@@ -1,0 +1,8 @@
+name: playlist-shuffle
+account: k300apps
+server: shinyapps.io
+bundleId: 245448
+url: https://k300apps.shinyapps.io/playlist-shuffle
+when: 1440088923.80522
+asMultiple: FALSE
+asStatic: FALSE
