@@ -1,0 +1,8 @@
+name: dice-sampling
+account: k300apps
+server: shinyapps.io
+bundleId: 251165
+url: https://k300apps.shinyapps.io/dice-sampling
+when: 1440445258.15333
+asMultiple: FALSE
+asStatic: FALSE
