@@ -22,15 +22,18 @@ shinyUI(
             fluidRow(
               column(4,
                      wellPanel(
+                       HTML('<legend>Urn Contents</legend>'),
                        tableOutput('urnItems'),
                        actionButton('resetUrn', "Remove All Items")
                      ),
                      wellPanel(
+                       HTML('<legend>Add Item(s) to the Urn</legend>'),
                        numericInput('urnCount','Number',1, min=1, step=1),
                        textInput('urnName','Name'),
                        actionButton('addUrn', "Add")
                      ),
                      wellPanel(
+                       HTML('<legend>Sampling Options</legend>'),
                        radioButtons("samplingType", "Sampling Method",
                                     c("Fixed Sample Size"="fixed",
                                       "Conditional Stopping"="conditional")),
@@ -41,38 +44,44 @@ shinyUI(
                        ),
                        conditionalPanel(
                          condition = "input.samplingType == 'conditional'",
-                         numericInput('stoppingAmount', 'Stop after a sample contains',1),
+                         numericInput('stoppingAmount', 'Sample with replacement, stopping after a sample contains',1),
                          uiOutput('typesList')
-                         
-                       )
+                       ),
+                       uiOutput('sampleSizeError')
                      ),
                      wellPanel(
-                       
-                       
+                       HTML('<legend>Run the Simulation</legend>'),
                        fluidRow(
-                         column(12,
-                                actionButton("run1", "Run 1", css.class="btn-sm"),
-                                actionButton("run10", "Run 10", css.class="btn-sm"),
-                                actionButton("run100", "Run 100", css.class="btn-sm"),
-                                actionButton("run1000", "Run 1000", css.class="btn-sm"),
+                         column(12, style="text-align:center",
+                                actionButton("run1", "Run 1" ),
+                                actionButton("run10", "Run 10" ),
+                                actionButton("run100", "Run 100"),
+                                actionButton("run1000", "Run 1000"),
                                 class="form-group")
                        ),
                        fluidRow(column(12,style="text-align:center",class="form-group", 
-                                       actionButton("reset","Reset Simulation", css.class="btn-sm")))
-                     ),
-                     wellPanel(
-                       radioButtons("reportingType", "Show",
-                                    c("Number of particular types in sample"="number",
-                                      "Percentage of particular types in sample"="percentage")),
-                       uiOutput('displayTypeChoices')
+                                       actionButton("reset","Reset Simulation")))
                      )
+                     
               ),
               
               # Show a plot of the generated distribution
               column(8,
                      plotOutput("distPlot"),
+                     fluidRow(
+                       column(6,
+                              wellPanel(
+                                HTML('<legend>Histogram Options</legend>'),
+                                radioButtons("reportingType", "Show",
+                                             c("Number of particular types in sample"="number",
+                                               "Percentage of particular types in sample"="percentage")),
+                                uiOutput('displayTypeChoices')
+                              )),
+                       column(6,
+                              wellPanel()
+                       )),
                      wellPanel(
-                       textOutput('rangeInfo')
+                       textOutput('simInfo')
                      )
               )
             )
