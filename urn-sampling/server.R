@@ -148,6 +148,15 @@ shinyServer(function(input, output, session) {
     rv$outcomes <- NULL
   })
   
+  getFilteredSet <- function(){
+    summarySetTypes <- input$displayTypes
+    
+    summaryStats <- apply(rv$outcomes, 2, function(v){
+      v <- v[!is.na(v)]
+      return(v %in% summarySetTypes)
+    })
+  }
+  
   output$distPlot <- renderPlot({
     
     if(length(rv$outcomes)==0) { return(NULL) }
@@ -229,6 +238,10 @@ shinyServer(function(input, output, session) {
       } else {
         return(paste0("There have been ",dim(rv$outcomes)[2]," runs of the simulation. "))
       }
+    })
+    
+    output$summaryNumItemsMean <- renderText({
+      return("Show the mean here")
     })
   
 #     output$rangeInfo <- renderText({

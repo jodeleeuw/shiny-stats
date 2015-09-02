@@ -28,8 +28,14 @@ shinyUI(
                      ),
                      wellPanel(
                        HTML('<legend>Add Item(s) to the Urn</legend>'),
-                       numericInput('urnCount','Number',1, min=1, step=1),
-                       textInput('urnName','Name'),
+                       fluidRow(
+                         column(3,
+                                numericInput('urnCount','Number',1, min=1, step=1)
+                         ),
+                         column(8,
+                                textInput('urnName','Name')
+                         )
+                       ),
                        actionButton('addUrn', "Add")
                      ),
                      wellPanel(
@@ -69,16 +75,27 @@ shinyUI(
               column(8,
                      plotOutput("distPlot"),
                      fluidRow(
-                       column(6,
+                       column(4,
+                              wellPanel(
+                                HTML('<legend>Filter Items</legend>'),
+                                uiOutput('displayTypeChoices')
+                              )
+                       ),
+                       column(4,
                               wellPanel(
                                 HTML('<legend>Histogram Options</legend>'),
                                 radioButtons("reportingType", "Show",
                                              c("Number of particular types in sample"="number",
-                                               "Percentage of particular types in sample"="percentage")),
-                                uiOutput('displayTypeChoices')
+                                               "Percentage of particular types in sample"="percentage"))
+                                #uiOutput('displayTypeChoices')
                               )),
-                       column(6,
-                              wellPanel()
+                       column(4,
+                              wellPanel(
+                                HTML('<legend>Summary Statistics</legend>'),
+                                checkboxInput('summaryNumItems', 'Number of Items in Sample'),
+                                conditionalPanel('input.summaryNumItems == true',
+                                                 textOutput('summaryNumItemsMean'))
+                              )
                        )),
                      wellPanel(
                        textOutput('simInfo')
