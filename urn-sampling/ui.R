@@ -23,7 +23,8 @@ shinyUI(
               column(4,
                      wellPanel(
                        HTML('<legend>Urn Contents</legend>'),
-                       tableOutput('urnItems'),
+                       uiOutput('urnItemsText'),
+                       tableOutput('urnItemsTable'),
                        actionButton('resetUrn', "Remove All Items")
                      ),
                      wellPanel(
@@ -104,7 +105,10 @@ shinyUI(
                                 HTML('<legend>Summary Statistics</legend>'),
                                 checkboxInput('summaryNumItems', 'Number of Items in Sample'),
                                 conditionalPanel('input.summaryNumItems == true',
-                                                 textOutput('summaryNumItemsMean'))
+                                                 textOutput('summaryNumItemsMean')),
+                                checkboxInput('summaryRange', 'Percentage of Items in Specified Range'),
+                                conditionalPanel('input.summaryRange == true',
+                                                 uiOutput('rangeSlider'))
                               )
                        )),
                      wellPanel(

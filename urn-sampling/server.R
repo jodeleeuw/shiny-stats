@@ -17,7 +17,21 @@ shinyServer(function(input, output, session) {
     types = data.frame(Count=numeric(), Type=character())
   )
   
-  output$urnItems <- renderTable(rv$types, include.rownames=F)
+  output$urnItemsText <- renderUI({
+    if(nrow(rv$types) == 0){
+      return(HTML('<p>The urn is currently empty.</p>'))
+    } else {
+      return(NULL)
+    }
+  })
+  
+  output$urnItemsTable <- renderTable({
+    if(nrow(rv$types) == 0){
+      return(NULL)
+    } else {
+      return(rv$types)
+    }
+  }, include.rownames=F)
   
   observeEvent(input$resetUrn, {
     rv$types = rv$types[NULL,]
@@ -44,6 +58,8 @@ shinyServer(function(input, output, session) {
     names(choices) <- rv$types$Type
     if(length(choices) > 0){
       checkboxGroupInput('displayTypes','Which types?',choices, inline=T)
+    } else {
+      HTML('<div class="shiny-text-output">You must add an item to the urn before setting the filters.</div>')
     }
   })
   
@@ -164,6 +180,8 @@ shinyServer(function(input, output, session) {
     whichSummary <- input$reportingType
     summarySetTypes <- input$displayTypes
     
+    if(length(summarySetTypes)==0) { return(NULL) }
+    
     summaryStats <- apply(rv$outcomes, 2, function(v){
       v <- v[!is.na(v)]
       if(whichSummary == 'number'){
@@ -232,33 +250,33 @@ shinyServer(function(input, output, session) {
     
   })
   
-    output$simInfo <- renderText({
-      if(is.null(dim(rv$outcomes)[2])){
-        return("Run a trial to see the results!")
-      } else {
-        return(paste0("There have been ",dim(rv$outcomes)[2]," runs of the simulation. "))
-      }
-    })
-    
-    output$summaryNumItemsMean <- renderText({
-      set <- getFilteredSet()
-      mean <- mean(apply(set, 2, sum))
-      return(as.character(mean))
-    })
+  output$simInfo <- renderText({
+    if(is.null(dim(rv$outcomes)[2])){
+      return("Run a trial to see the results!")
+    } else {
+      return(paste0("There have been ",dim(rv$outcomes)[2]," runs of the simulation. "))
+    }
+  })
   
-#     output$rangeInfo <- renderText({
-#       if(input$rangeType == 'inside'){
-#         v <- sum(rv$outcomes >= input$range[1] & rv$outcomes <= input$range[2])
-#       } else {
-#         v <- sum(rv$outcomes < input$range[1] | rv$outcomes > input$range[2])
-#       }
-#       p <- v / length(rv$outcomes)*100
-#       if(is.nan(p)){
-#         return("Run a trial to see the results!")
-#       } else {
-#         return(paste0("There have been ",dim(rv$outcomes)[2]," runs of the simulation. ",round(p,digits=2),"% of the outcomes meet the selection criteria."))
-#       }
-#     })
+  output$summaryNumItemsMean <- renderText({
+    #set <- getFilteredSet()
+    #mean <- mean(apply(set, 2, sum))
+    return("The mean number of items in each sample is ... ")
+  })
+  
+  #     output$rangeInfo <- renderText({
+  #       if(input$rangeType == 'inside'){
+  #         v <- sum(rv$outcomes >= input$range[1] & rv$outcomes <= input$range[2])
+  #       } else {
+  #         v <- sum(rv$outcomes < input$range[1] | rv$outcomes > input$range[2])
+  #       }
+  #       p <- v / length(rv$outcomes)*100
+  #       if(is.nan(p)){
+  #         return("Run a trial to see the results!")
+  #       } else {
+  #         return(paste0("There have been ",dim(rv$outcomes)[2]," runs of the simulation. ",round(p,digits=2),"% of the outcomes meet the selection criteria."))
+  #       }
+  #     })
   
   observe({
     if(rv$started){
@@ -285,10 +303,10 @@ shinyServer(function(input, output, session) {
     }
   })
   
-  #   output$evaluationPanel <- renderUI({
-  #     maxV <- input$numCoins
-  #     qV <- round(maxV / 4)
-  #     sliderInput("range",label="of the following range", min=0,max=input$numCoins,step=1,value=c(qV,input$numCoins-qV))
-  #   })
+  output$rangeSlider <- renderUI({
+    maxV <- 10
+    qV <- round(maxV / 4)
+    sliderInput("range",label="of the following range", min=0,max=maxV,step=1,value=c(qV,maxV-qV))
+  })
   
 })
