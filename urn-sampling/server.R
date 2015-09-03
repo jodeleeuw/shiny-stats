@@ -305,6 +305,9 @@ shinyServer(function(input, output, session) {
   
   output$rangeSlider <- renderUI({
     maxV <- 10
+    if(input$samplingType == 'fixed'){
+      maxV <- input$sampleSize
+    }
     qV <- round(maxV / 4)
     sliderInput("range",label="of the following range", min=0,max=maxV,step=1,value=c(qV,maxV-qV))
   })
