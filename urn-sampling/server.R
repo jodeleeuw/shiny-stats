@@ -241,7 +241,9 @@ shinyServer(function(input, output, session) {
     })
     
     output$summaryNumItemsMean <- renderText({
-      return("Show the mean here")
+      set <- getFilteredSet()
+      mean <- mean(apply(set, 2, sum))
+      return(as.character(mean))
     })
   
 #     output$rangeInfo <- renderText({

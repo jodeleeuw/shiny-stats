@@ -45,13 +45,23 @@ shinyUI(
                                       "Conditional Stopping"="conditional")),
                        conditionalPanel(
                          condition = "input.samplingType == 'fixed'",
-                         numericInput('sampleSize', 'Pick this many items',1,min=1,step=1),
-                         selectInput('replacement',"",c('with replacement'='with','without replacement'='without'))
+                         HTML('<label class="control-label">Pick this many items:</label>'),
+                         fluidRow(
+                           column(3,numericInput('sampleSize', NULL,1,min=1,step=1)),
+                           column(6,selectInput('replacement',NULL,c('with replacement'='with','without replacement'='without')))
+                         )
                        ),
                        conditionalPanel(
                          condition = "input.samplingType == 'conditional'",
-                         numericInput('stoppingAmount', 'Sample with replacement, stopping after a sample contains',1),
-                         uiOutput('typesList')
+                         HTML('<label class="control-label">Sample with replacement. Stop after a sample contains:</label>'),
+                         fluidRow(
+                           column(3,
+                                  numericInput('stoppingAmount', NULL,1)
+                           ),
+                           column(6, 
+                                  uiOutput('typesList')
+                           )
+                         )
                        ),
                        uiOutput('sampleSizeError')
                      ),
