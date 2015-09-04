@@ -108,7 +108,9 @@ shinyUI(
                                                  textOutput('summaryNumItemsMean')),
                                 checkboxInput('summaryRange', 'Percentage of Items in Specified Range'),
                                 conditionalPanel('input.summaryRange == true',
-                                                 uiOutput('rangeSlider'))
+                                                 selectInput("rangeType", "Show the % of outcomes that are", c("inside", "outside"), selected="inside"),
+                                                 uiOutput('rangeSlider'),
+                                                 textOutput('rangeInfo'))
                               )
                        )),
                      wellPanel(

@@ -195,58 +195,41 @@ shinyServer(function(input, output, session) {
     colnames(data) <- c("val","freq")
     data$val <- as.numeric(as.character(data$val))
     
+    
+    maxV <- 10
+    if(input$samplingType == 'fixed'){
+      maxV <- input$sampleSize
+    }
+    if(input$samplingType == 'conditional'){
+      
+    }
+    
+    data$inrange <- sapply(data$val, function(b){
+      if(input$rangeType == 'inside'){
+        if(b >= input$range[1] & b <= input$range[2]){
+          return("red")
+        } else {
+          return("black")
+        }
+      } else {
+        if(b >= input$range[1] & b <= input$range[2]){
+          return("black")
+        } else {
+          return("red")
+        }
+      }
+    })
+    
     p <- ggplot(data, aes(x=val,y=freq))+ #, fill=val)) +
       geom_bar(stat="identity")+
       labs(y="# of trials\n",x="\nOutcome")+
-      #scale_fill_manual(guide=F, limits=b,values=v, drop=F)+
-      #scale_x_discrete(breaks = data$val)+
       theme_minimal(base_size=18)
-    return(p)
     
-    #     if(length(rv$outcomes)==0){ return(NULL) }
-    #     
-    #     data <- data.frame(table(rv$outcomes))
-    #     colnames(data) <- c("val","freq")
-    #     
-    #     b <- 0:input$numCoins
-    #     v <- sapply(b, function(b){
-    #       if(input$rangeType == 'inside'){
-    #         if(b >= input$range[1] & b <= input$range[2]){
-    #           return("red")
-    #         } else {
-    #           return("black")
-    #         }
-    #       } else {
-    #         if(b >= input$range[1] & b <= input$range[2]){
-    #           return("black")
-    #         } else {
-    #           return("red")
-    #         }
-    #       }
-    #     })
-    #     
-    #     if(input$numCoins >= 10000){
-    #       byval <- 25
-    #     } else if(input$numCoins >= 1000){
-    #       byval <- 10
-    #     } else if(input$numCoins >= 500){
-    #       byval <- 5
-    #     } else if(input$numCoins >= 100){
-    #       byval <- 2
-    #     } else {
-    #       byval <- 1
-    #     }
-    #     
-    #     lab_breaks <- seq(from=0, to=input$numCoins, by=byval)
-    #     
-    #     
-    #     p <- ggplot(data, aes(x=val,y=freq, fill=val)) +
-    #       geom_bar(stat="identity")+
-    #       labs(y="# of trials\n",x="\n# of heads in trial")+
-    #       scale_fill_manual(guide=F, limits=b,values=v, drop=F)+
-    #       scale_x_discrete(breaks=lab_breaks)+
-    #       theme_minimal(base_size=18)
-    #     return(p)
+    if(input$summaryRange == TRUE){
+      p <- p + aes(fill=inrange) + scale_fill_manual(values=c('black','red'),guide=F)
+    }
+    
+    return(p)
     
   })
   
@@ -259,24 +242,16 @@ shinyServer(function(input, output, session) {
   })
   
   output$summaryNumItemsMean <- renderText({
+    
+    summaryStats <- apply(rv$outcomes, 2, function(v){
+      v <- v[!is.na(v)]
+      return(sum(v %in% input$displayTypes))
+    })
+    m <- mean(summaryStats)
     #set <- getFilteredSet()
     #mean <- mean(apply(set, 2, sum))
-    return("The mean number of items in each sample is ... ")
+    return(paste0("The mean number of selected items in each sample is ",m))
   })
-  
-  #     output$rangeInfo <- renderText({
-  #       if(input$rangeType == 'inside'){
-  #         v <- sum(rv$outcomes >= input$range[1] & rv$outcomes <= input$range[2])
-  #       } else {
-  #         v <- sum(rv$outcomes < input$range[1] | rv$outcomes > input$range[2])
-  #       }
-  #       p <- v / length(rv$outcomes)*100
-  #       if(is.nan(p)){
-  #         return("Run a trial to see the results!")
-  #       } else {
-  #         return(paste0("There have been ",dim(rv$outcomes)[2]," runs of the simulation. ",round(p,digits=2),"% of the outcomes meet the selection criteria."))
-  #       }
-  #     })
   
   observe({
     if(rv$started){
@@ -308,8 +283,33 @@ shinyServer(function(input, output, session) {
     if(input$samplingType == 'fixed'){
       maxV <- input$sampleSize
     }
+    if(input$samplingType == 'conditional'){
+      
+    }
     qV <- round(maxV / 4)
     sliderInput("range",label="of the following range", min=0,max=maxV,step=1,value=c(qV,maxV-qV))
+  })
+  
+  output$rangeInfo <- renderText({
+    
+    if(is.null(rv$outcomes)) { return('Run more simulations') }
+    
+    summaryStats <- apply(rv$outcomes, 2, function(v){
+      v <- v[!is.na(v)]
+      return(sum(v %in% input$displayTypes))
+    })
+    
+    if(input$rangeType == 'inside'){
+      v <- sum(summaryStats >= input$range[1] & summaryStats <= input$range[2])
+    } else {
+      v <- sum(summaryStats < input$range[1] | summaryStats > input$range[2])
+    }
+    p <- v / length(summaryStats)*100
+    if(is.nan(p)){
+      return("Run more simulations.")
+    } else {
+      return(paste0(round(p,digits=2),"% of the outcomes meet the selection criteria."))
+    }
   })
   
 })
