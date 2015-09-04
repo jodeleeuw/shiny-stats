@@ -115,13 +115,26 @@ shinyServer(function(input, output, session) {
       s <- replicate(times, sample(set, input$sampleSize, replace=replacement))
     }
     if(input$samplingType == 'conditional'){
-      s <- replicate(times, {
-        samp <- sample(set, 1)
-        while(sum(samp==input$stoppingType) < input$stoppingAmount){
-          samp <- c(samp, sample(set, 1))
-        }
-        return(samp)
-      }, simplify=FALSE)
+      if(input$replacementConditional == 'with'){
+        s <- replicate(times, {
+          samp <- sample(set, 1)
+          while(sum(samp==input$stoppingType) < input$stoppingAmount){
+            samp <- c(samp, sample(set, 1))
+          }
+          return(samp)
+        }, simplify=FALSE)
+      } else if(input$replacementConditional == 'without'){
+        s <- replicate(times, {
+          items <- sample(set) # shuffle the vector
+          samp <- items[1]
+          end <- 1
+          while(sum(samp==input$stoppingType) < input$stoppingAmount && end < length(set)){
+            end <- end+1
+            samp <- items[1:end]
+          }
+          return(samp)
+        }, simplify=FALSE)
+      }
       maxl <- max(sapply(s,length))
       s <- sapply(s, function(x){
         c(x,rep(NA, maxl-length(x)))
@@ -243,6 +256,8 @@ shinyServer(function(input, output, session) {
   
   output$summaryNumItemsMean <- renderText({
     
+    if(is.null(rv$outcomes)) { return(NULL) }
+    
     summaryStats <- apply(rv$outcomes, 2, function(v){
       v <- v[!is.na(v)]
       return(sum(v %in% input$displayTypes))
@@ -261,6 +276,7 @@ shinyServer(function(input, output, session) {
       disable("samplingType")
       disable("sampleSize")
       disable("replacement")
+      disable("replacementConditional")
       disable("stoppingAmount")
       disable("stoppingType")
       disable("resetUrn")
@@ -272,6 +288,7 @@ shinyServer(function(input, output, session) {
       enable("samplingType")
       enable("sampleSize")
       enable("replacement")
+      enable("replacementConditional")
       enable("stoppingAmount")
       enable("stoppingType")
       enable("resetUrn")
@@ -280,24 +297,39 @@ shinyServer(function(input, output, session) {
   
   output$rangeSlider <- renderUI({
     maxV <- 10
-    if(input$samplingType == 'fixed'){
-      maxV <- input$sampleSize
-    }
-    if(input$samplingType == 'conditional'){
-      
+    stepsize <- 1
+    if(input$reportingType == 'number'){
+      if(input$samplingType == 'fixed'){
+        maxV <- input$sampleSize
+      }
+      if(input$samplingType == 'conditional'){
+        
+      }
+    } else if(input$reportingType == 'percentage'){
+      maxV <- 100
+      stepsize <- 0.1
     }
     qV <- round(maxV / 4)
-    sliderInput("range",label="of the following range", min=0,max=maxV,step=1,value=c(qV,maxV-qV))
+    sliderInput("range",label="of the following range", min=0,max=maxV,step=stepsize,value=c(qV,maxV-qV))
+  })
+  
+  sumOutcomes <- reactive({
+    if(is.null(rv$outcomes)){return(NA)}
+    apply(rv$outcomes, 2, function(v){
+      v <- v[!is.na(v)]
+      if(input$reportingType == 'number'){
+        return(sum(v %in% input$displayTypes))
+      } else if(input$reportingType == 'percentage'){
+        return(sum(v %in% input$displayTypes) / length(v) * 100)
+      }
+    })
   })
   
   output$rangeInfo <- renderText({
     
     if(is.null(rv$outcomes)) { return('Run more simulations') }
     
-    summaryStats <- apply(rv$outcomes, 2, function(v){
-      v <- v[!is.na(v)]
-      return(sum(v %in% input$displayTypes))
-    })
+    summaryStats <- sumOutcomes()
     
     if(input$rangeType == 'inside'){
       v <- sum(summaryStats >= input$range[1] & summaryStats <= input$range[2])

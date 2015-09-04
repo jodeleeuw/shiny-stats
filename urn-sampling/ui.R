@@ -54,7 +54,8 @@ shinyUI(
                        ),
                        conditionalPanel(
                          condition = "input.samplingType == 'conditional'",
-                         HTML('<label class="control-label">Sample with replacement. Stop after a sample contains:</label>'),
+                         selectInput('replacementConditional','Sample:',c('with replacement'='with','without replacement'='without')),
+                         HTML('<label class="control-label">Stop after a sample contains:</label>'),
                          fluidRow(
                            column(3,
                                   numericInput('stoppingAmount', NULL,1)
