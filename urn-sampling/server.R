@@ -197,11 +197,8 @@ shinyServer(function(input, output, session) {
     
     summaryStats <- apply(rv$outcomes, 2, function(v){
       v <- v[!is.na(v)]
-      if(whichSummary == 'number'){
-        return(sum(v %in% summarySetTypes))
-      } else if(whichSummary == 'percentage'){
-        return(sum(v %in% summarySetTypes)/length(v)*100)
-      }
+      return(sum(v %in% summarySetTypes))
+      
     })
     
     data <- data.frame(table(summaryStats))
@@ -296,19 +293,15 @@ shinyServer(function(input, output, session) {
   })
   
   output$rangeSlider <- renderUI({
-    maxV <- 10
     stepsize <- 1
-    if(input$reportingType == 'number'){
+    
       if(input$samplingType == 'fixed'){
         maxV <- input$sampleSize
       }
       if(input$samplingType == 'conditional'){
-        
+        maxV <- max(sumOutcomes())
       }
-    } else if(input$reportingType == 'percentage'){
-      maxV <- 100
-      stepsize <- 0.1
-    }
+   
     qV <- round(maxV / 4)
     sliderInput("range",label="of the following range", min=0,max=maxV,step=stepsize,value=c(qV,maxV-qV))
   })
@@ -317,11 +310,7 @@ shinyServer(function(input, output, session) {
     if(is.null(rv$outcomes)){return(NA)}
     apply(rv$outcomes, 2, function(v){
       v <- v[!is.na(v)]
-      if(input$reportingType == 'number'){
-        return(sum(v %in% input$displayTypes))
-      } else if(input$reportingType == 'percentage'){
-        return(sum(v %in% input$displayTypes) / length(v) * 100)
-      }
+      return(sum(v %in% input$displayTypes))
     })
   })
   

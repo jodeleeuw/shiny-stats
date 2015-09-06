@@ -93,15 +93,7 @@ shinyUI(
                                 uiOutput('displayTypeChoices')
                               )
                        ),
-                       column(4,
-                              wellPanel(
-                                HTML('<legend>Histogram Options</legend>'),
-                                radioButtons("reportingType", "Show",
-                                             c("Number of particular types in sample"="number",
-                                               "Percentage of particular types in sample"="percentage"))
-                                #uiOutput('displayTypeChoices')
-                              )),
-                       column(4,
+                       column(8,
                               wellPanel(
                                 HTML('<legend>Summary Statistics</legend>'),
                                 checkboxInput('summaryNumItems', 'Number of Items in Sample'),
