@@ -53,9 +53,10 @@ shinyServer(function(input, output, session) {
     
     data <- data.frame(table(rv$outcomes))
     colnames(data) <- c("val","freq")
+    data$val <- as.numeric(as.character(data$val))
+    data$freq <- as.numeric(as.character(data$freq))
     
-    b <- 0:input$numCoins
-    v <- sapply(b, function(b){
+    data$inrange <- sapply(data$val, function(b){
       if(input$rangeType == 'inside'){
         if(b >= input$range[1] & b <= input$range[2]){
           return("red")
@@ -71,26 +72,15 @@ shinyServer(function(input, output, session) {
       }
     })
     
-    if(input$numCoins >= 10000){
-      byval <- 25
-    } else if(input$numCoins >= 1000){
-      byval <- 10
-    } else if(input$numCoins >= 500){
-      byval <- 5
-    } else if(input$numCoins >= 100){
-      byval <- 2
-    } else {
-      byval <- 1
-    }
+    data$inrange <- as.factor(data$inrange)
     
-    lab_breaks <- seq(from=0, to=input$numCoins, by=byval)
+    fillv <- levels(data$inrange)
     
-    
-    p <- ggplot(data, aes(x=val,y=freq, fill=val)) +
+    p <- ggplot(data, aes(x=val,y=freq, fill=inrange)) +
       geom_bar(stat="identity")+
       labs(y="# of trials\n",x="\n# of heads in trial")+
-      scale_fill_manual(guide=F, limits=b,values=v, drop=F)+
-      scale_x_discrete(breaks=lab_breaks)+
+      scale_fill_manual(guide=F, values=fillv)+
+      #scale_x_discrete(breaks=lab_breaks)+
       theme_minimal(base_size=18)
     return(p)
 
