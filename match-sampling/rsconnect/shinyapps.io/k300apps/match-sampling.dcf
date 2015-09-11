@@ -1,0 +1,8 @@
+name: match-sampling
+account: k300apps
+server: shinyapps.io
+bundleId: 261318
+url: https://k300apps.shinyapps.io/match-sampling
+when: 1441814471.623
+asMultiple: FALSE
+asStatic: FALSE

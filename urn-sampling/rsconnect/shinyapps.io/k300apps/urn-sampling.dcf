@@ -1,8 +1,8 @@
 name: urn-sampling
 account: k300apps
 server: shinyapps.io
-bundleId: 263247
+bundleId: 263278
 url: https://k300apps.shinyapps.io/urn-sampling
-when: 1441984925.80862
+when: 1441987746.90204
 asMultiple: FALSE
 asStatic: FALSE

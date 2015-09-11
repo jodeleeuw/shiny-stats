@@ -181,7 +181,7 @@ shinyServer(function(input, output, session) {
     summarySetTypes <- input$displayTypes
     
     summaryStats <- apply(rv$outcomes, 2, function(v){
-      v <- v[!is.na(v)]
+      v <- make.names(v[!is.na(v)])
       return(v %in% summarySetTypes)
     })
   }
@@ -256,7 +256,7 @@ shinyServer(function(input, output, session) {
     if(is.null(rv$outcomes)) { return(NULL) }
     
     summaryStats <- apply(rv$outcomes, 2, function(v){
-      v <- v[!is.na(v)]
+      v <- make.names(v[!is.na(v)])
       return(sum(v %in% input$displayTypes))
     })
     m <- mean(summaryStats)
@@ -309,7 +309,7 @@ shinyServer(function(input, output, session) {
   sumOutcomes <- reactive({
     if(is.null(rv$outcomes)){return(NA)}
     apply(rv$outcomes, 2, function(v){
-      v <- v[!is.na(v)]
+      v <- make.names(v[!is.na(v)])
       return(sum(v %in% input$displayTypes))
     })
   })
