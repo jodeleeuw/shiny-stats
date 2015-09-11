@@ -196,7 +196,7 @@ shinyServer(function(input, output, session) {
     if(length(summarySetTypes)==0) { return(NULL) }
     
     summaryStats <- apply(rv$outcomes, 2, function(v){
-      v <- v[!is.na(v)]
+      v <- make.names(v[!is.na(v)])
       return(sum(v %in% summarySetTypes))
       
     })
