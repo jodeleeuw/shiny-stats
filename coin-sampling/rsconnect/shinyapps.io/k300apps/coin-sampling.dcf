@@ -1,8 +1,8 @@
 name: coin-sampling
 account: k300apps
 server: shinyapps.io
-bundleId: 260368
+bundleId: 272083
 url: https://k300apps.shinyapps.io/coin-sampling
-when: 1441719022.77455
+when: 1443021526.11972
 asMultiple: FALSE
 asStatic: FALSE

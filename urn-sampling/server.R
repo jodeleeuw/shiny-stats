@@ -17,22 +17,6 @@ shinyServer(function(input, output, session) {
     types = data.frame(Count=numeric(), Type=character())
   )
   
-  output$urnItemsText <- renderUI({
-    if(nrow(rv$types) == 0){
-      return(HTML('<p>The urn is currently empty.</p>'))
-    } else {
-      return(NULL)
-    }
-  })
-  
-  output$urnItemsTable <- renderTable({
-    if(nrow(rv$types) == 0){
-      return(NULL)
-    } else {
-      return(rv$types)
-    }
-  }, include.rownames=F)
-  
   observeEvent(input$resetUrn, {
     rv$types = rv$types[NULL,]
   })
@@ -117,9 +101,14 @@ shinyServer(function(input, output, session) {
     if(input$samplingType == 'conditional'){
       if(input$replacementConditional == 'with'){
         s <- replicate(times, {
-          samp <- sample(set, 1)
-          while(sum(samp==input$stoppingType) < input$stoppingAmount){
-            samp <- c(samp, sample(set, 1))
+          targetCount <- 0
+          samp <- character()
+          while(targetCount < input$stoppingAmount){
+            this_samp <- sample(set, 1)
+            if(this_samp == input$stoppingType){
+              targetCount <- targetCount + 1
+            }
+            samp <- c(samp, this_samp)
           }
           return(samp)
         }, simplify=FALSE)
@@ -177,15 +166,6 @@ shinyServer(function(input, output, session) {
     rv$outcomes <- NULL
   })
   
-  getFilteredSet <- function(){
-    summarySetTypes <- input$displayTypes
-    
-    summaryStats <- apply(rv$outcomes, 2, function(v){
-      v <- make.names(v[!is.na(v)])
-      return(v %in% summarySetTypes)
-    })
-  }
-  
   output$distPlot <- renderPlot({
     
     if(length(rv$outcomes)==0) { return(NULL) }
@@ -195,16 +175,11 @@ shinyServer(function(input, output, session) {
     
     if(length(summarySetTypes)==0) { return(NULL) }
     
-    summaryStats <- apply(rv$outcomes, 2, function(v){
-      v <- make.names(v[!is.na(v)])
-      return(sum(v %in% summarySetTypes))
-      
-    })
+    summaryStats <- sumOutcomes()
     
     data <- data.frame(table(summaryStats))
     colnames(data) <- c("val","freq")
     data$val <- as.numeric(as.character(data$val))
-    
     
     maxV <- 10
     if(input$samplingType == 'fixed'){
@@ -255,15 +230,60 @@ shinyServer(function(input, output, session) {
     
     if(is.null(rv$outcomes)) { return(NULL) }
     
-    summaryStats <- apply(rv$outcomes, 2, function(v){
-      v <- make.names(v[!is.na(v)])
-      return(sum(v %in% input$displayTypes))
-    })
+    summaryStats <- sumOutcomes()
     m <- mean(summaryStats)
-    #set <- getFilteredSet()
-    #mean <- mean(apply(set, 2, sum))
+    
     return(paste0("The mean number of selected items in each sample is ",m))
   })
+  
+  output$rangeSlider <- renderUI({
+    stepsize <- 1
+    
+      if(input$samplingType == 'fixed'){
+        maxV <- input$sampleSize
+      }
+      if(input$samplingType == 'conditional'){
+        maxV <- max(sumOutcomes())
+      }
+   
+    qV <- round(maxV / 4)
+    sliderInput("range",label="of the following range", min=0,max=maxV,step=stepsize,value=c(qV,maxV-qV))
+  })
+  
+  output$rangeInfo <- renderText({
+    
+    if(is.null(rv$outcomes)) { return('Run more simulations') }
+    
+    summaryStats <- sumOutcomes()
+    
+    if(input$rangeType == 'inside'){
+      v <- sum(summaryStats >= input$range[1] & summaryStats <= input$range[2])
+    } else {
+      v <- sum(summaryStats < input$range[1] | summaryStats > input$range[2])
+    }
+    p <- v / length(summaryStats)*100
+    if(is.nan(p)){
+      return("Run more simulations.")
+    } else {
+      return(paste0(round(p,digits=2),"% of the outcomes meet the selection criteria."))
+    }
+  })
+  
+  output$urnItemsText <- renderUI({
+    if(nrow(rv$types) == 0){
+      return(HTML('<p>The urn is currently empty.</p>'))
+    } else {
+      return(NULL)
+    }
+  })
+  
+  output$urnItemsTable <- renderTable({
+    if(nrow(rv$types) == 0){
+      return(NULL)
+    } else {
+      return(rv$types)
+    }
+  }, include.rownames=F)
   
   observe({
     if(rv$started){
@@ -292,45 +312,12 @@ shinyServer(function(input, output, session) {
     }
   })
   
-  output$rangeSlider <- renderUI({
-    stepsize <- 1
-    
-      if(input$samplingType == 'fixed'){
-        maxV <- input$sampleSize
-      }
-      if(input$samplingType == 'conditional'){
-        maxV <- max(sumOutcomes())
-      }
-   
-    qV <- round(maxV / 4)
-    sliderInput("range",label="of the following range", min=0,max=maxV,step=stepsize,value=c(qV,maxV-qV))
-  })
-  
   sumOutcomes <- reactive({
     if(is.null(rv$outcomes)){return(NA)}
     apply(rv$outcomes, 2, function(v){
       v <- make.names(v[!is.na(v)])
       return(sum(v %in% input$displayTypes))
     })
-  })
-  
-  output$rangeInfo <- renderText({
-    
-    if(is.null(rv$outcomes)) { return('Run more simulations') }
-    
-    summaryStats <- sumOutcomes()
-    
-    if(input$rangeType == 'inside'){
-      v <- sum(summaryStats >= input$range[1] & summaryStats <= input$range[2])
-    } else {
-      v <- sum(summaryStats < input$range[1] | summaryStats > input$range[2])
-    }
-    p <- v / length(summaryStats)*100
-    if(is.nan(p)){
-      return("Run more simulations.")
-    } else {
-      return(paste0(round(p,digits=2),"% of the outcomes meet the selection criteria."))
-    }
   })
   
 })

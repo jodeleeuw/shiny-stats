@@ -37,6 +37,16 @@ shinyServer(function(input, output, session) {
     runFlips(1000)
   })
   
+  observe({
+    x <- input$probHeads
+    if(is.na(x)){ return() }
+    if(x > 1) {
+      updateNumericInput(session, 'probHeads',value=1)
+    } else if(x < 0){
+      updateNumericInput(session, 'probHeads',value=0)
+    }
+  })
+  
   runFlips <- function(n){
     rv$started <- T
     o <- doFlip(input$numCoins, input$probHeads, n)
