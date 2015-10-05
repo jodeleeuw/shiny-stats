@@ -27,18 +27,21 @@ shinyUI(fluidPage(
   fluidRow(
     column(4,
            wellPanel(
-             HTML('<legend>Observed Data</legend>'),
+             HTML('<legend>Input observed data</legend>'),
              fluidRow(
                column(6, numericInput("obsA", "# of observations in Group A", 1, min = 1),
                       hotable("tblA")),
                column(6, numericInput("obsB", "# of observations in Group B", 1, min = 1), 
                       hotable("tblB"))
-             ),
-             htmlOutput('observedSummary')
+             )
            ),
            wellPanel(
-             column(12, plotOutput("groupsPlot") )
-             ,
+             HTML('<legend>Observed data summary</legend>'),
+             htmlOutput('observedSummary'),
+             plotOutput("groupsPlot")
+           ),
+           wellPanel(
+             HTML('<legend>Run simulations</legend>'),
              fluidRow(
                column(12,
                       actionButton("flip1", "Run 1", css.class="btn-sm"),
@@ -46,14 +49,19 @@ shinyUI(fluidPage(
                       actionButton("flip100", "Run 100", css.class="btn-sm"),
                       actionButton("flip1000", "Run 1000", css.class="btn-sm"),
                       actionButton("flip10000", "Run 10000", css.class="btn-sm"),
-                      class="form-group")
+                      class="form-group"
+               )
              )
+             
            )
     ),
     column(8,
            plotOutput("distPlot"),
            wellPanel(
-             textOutput('rangeInfo'),
+             textOutput('rangeInfo')
+           ),
+           wellPanel(
+             HTML('<legend>Select outcomes</legend>'),
              radioButtons('displayType', "Select range based on:",
                           c("Difference of means" = "number",
                             "Percentiles" = "percentile")),

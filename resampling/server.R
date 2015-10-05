@@ -66,7 +66,7 @@ shinyServer(function(input, output) {
     Difference <- GroupA_mean - GroupB_mean
     if(!is.nan(GroupA_mean) && !is.nan(GroupB_mean)){
       return(paste0(
-        '<p style="padding-top:1em;">The observed mean for Group A is ',GroupA_mean,'.<br>',
+        '<p>The observed mean for Group A is ',GroupA_mean,'.<br>',
         'The observed mean for Group B is ',GroupB_mean,'.<br>',
         'The observed difference in means is ',Difference,'.</p>'
       ))
@@ -125,7 +125,7 @@ shinyServer(function(input, output) {
     resample(10000)
   })
   
-  
+  #### method for resampling ####
   resample <- function(n){
     #for each resampling it shuffles data and gets the mean difference
     rv$started <- T
@@ -144,10 +144,12 @@ shinyServer(function(input, output) {
     As <- groupArv()
     Bs <- groupBrv()
     Values <- c(As, Bs)
+    nodataflag <- F
     
     # if there's no data, the plot tells them something's funny
     if(length(Values)<2){
-      Values <- c(3,3)
+      Values <- c(0,0)
+      nodataflag <- T
     }
     OriginalGroup <- c(rep("A", length(As)), rep("B", length(Bs)))
     if(length(OriginalGroup)<2){
@@ -184,17 +186,26 @@ shinyServer(function(input, output) {
     
     mu <- data.frame(grp.mean = c(mean(def[def[,"NewGroup"]=="A","Values"]), mean(def[def[,"NewGroup"]=="B","Values"])),
                      NewGroup = c("A", "B"))
-    p <- ggplot(def, aes(x = Values, fill = OriginalGroup)) + 
-      geom_dotplot(binwidth=wid, stackgroups = TRUE, dotsize = maxRat, binpositions = "all") + 
-      facet_grid( NewGroup ~ .) + 
-      scale_y_continuous(name = "", breaks = NULL) + 
+    p <- ggplot(def, aes(x = Values, fill = OriginalGroup))
+    if(nodataflag){
+      p <- p + geom_blank()
+    } else {
+      p <- p + geom_dotplot(binwidth=wid, stackgroups = TRUE, dotsize = maxRat, binpositions = "all")
+    }
+    p <- p + facet_grid( NewGroup ~ .) + 
+      scale_y_continuous(name = "", breaks = NULL) +
+      labs(x="\nObserved outcome")+
       xlim(limMin, limMax) + 
-      theme_bw()+
-      theme(legend.position = "bottom") +
+      theme_bw(base_size=14)+
+      scale_fill_discrete(guide=F)+
+      theme(legend.position = "bottom", 
+            plot.background = element_rect(fill="transparent", colour=NA), 
+            panel.background = element_rect(fill="transparent", colour=NA)
+            ) +
       geom_vline(aes(xintercept=grp.mean), mu,
                  linetype="dashed", color="black")
     print(p)
-  })
+  }, bg="transparent")
   
   # plot the histogram of means
   output$distPlot <- renderPlot({
