@@ -25,8 +25,18 @@ shinyServer(function(input, output) {
   )
   
   # store As and Bs in reactive expression, so that they only update once.
-  groupArv <- reactive({ hot.to.df(input$tblA) })
-  groupBrv <- reactive({ hot.to.df(input$tblB) })
+  groupArv <- reactive({ 
+    data <- hot.to.df(input$tblA) 
+    vectorData <- data$A
+    vectorData <- vectorData[!is.na(vectorData)]
+    return(as.numeric(vectorData))
+  })
+  groupBrv <- reactive({ 
+    data <- hot.to.df(input$tblB) 
+    vectorData <- data$B
+    vectorData <- vectorData[!is.na(vectorData)]
+    return(as.numeric(vectorData))
+  })
   
   # hotable for group A
   output$tblA <- renderHotable({
@@ -51,10 +61,8 @@ shinyServer(function(input, output) {
   output$table <- renderTable({
     dataA <- groupArv()
     dataB <- groupBrv()
-    dataA$A <- as.numeric(dataA$A)
-    dataB$B <- as.numeric(dataB$B)
-    GroupA_mean <- mean(dataA$A)
-    GroupB_mean <- mean(dataB$B)
+    GroupA_mean <- mean(dataA)
+    GroupB_mean <- mean(dataB)
     Difference <- GroupA_mean - GroupB_mean
     tabl <- data.frame(GroupA_mean, GroupB_mean, Difference)
     return(tabl)
@@ -115,11 +123,9 @@ shinyServer(function(input, output) {
     #for each resampling it shuffles data and gets the mean difference
     rv$started <- T
     dataA <- groupArv()
-    dataA$A <- as.numeric(dataA$A)
     dataB <- groupBrv()
-    dataB$B <- as.numeric(dataB$B)
-    val <- c(as.numeric(dataA[!is.na(dataA[,"A"]),"A"]), as.numeric(dataB[!is.na(dataB[,"B"]),"B"]))
-    group <- c(rep("A", length(dataA[!is.na(dataA[,"A"]),"A"])), rep("B", length(dataB[!is.na(dataB[,"B"]),"B"])) )
+    val <- c(dataA, dataB)
+    group <- c(rep("A", length(dataA)), rep("B", length(dataB)))
     orders <- replicate(n, sample(group))
     rv$newOrder <- orders[,n]
     m <- apply(orders, MARGIN = 2, FUN = getMean, val = val )
@@ -130,13 +136,13 @@ shinyServer(function(input, output) {
   output$groupsPlot <- renderPlot({
     As <- groupArv()
     Bs <- groupBrv()
-    Values <- c(As[!is.na(As[,"A"]),"A"], Bs[!is.na(Bs[,"B"]),"B"])
+    Values <- c(As, Bs)
     
     # if there's no data, the plot tells them something's funny
     if(length(Values)<2){
       Values <- c(3,3)
     }
-    OriginalGroup <- c(rep("A", length(As[!is.na(As[,"A"]),"A"])), rep("B", length(Bs[!is.na(Bs[,"B"]),"B"])))
+    OriginalGroup <- c(rep("A", length(As)), rep("B", length(Bs)))
     if(length(OriginalGroup)<2){
       OriginalGroup <- c("A", "B")
     }
@@ -187,7 +193,7 @@ shinyServer(function(input, output) {
     if(length(rv$outcomes)==0){ return(NULL) }
     dataA <- groupArv()
     dataB <- groupBrv()
-    values <- c(as.numeric(dataA[!is.na(dataA[,"A"]),"A"]), as.numeric(dataB[!is.na(dataB[,"B"]),"B"]))
+    values <- c(dataA, dataB)
     data <- data.frame(table(rv$outcomes))
     colnames(data) <- c("val","freq")
     data$val <- as.numeric(as.character(data$val))
