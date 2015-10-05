@@ -58,14 +58,21 @@ shinyServer(function(input, output) {
   }, readOnly = FALSE)
   
   # table to show the means and mean difference of the groups
-  output$table <- renderTable({
+  output$observedSummary <- renderText({
     dataA <- groupArv()
     dataB <- groupBrv()
     GroupA_mean <- mean(dataA)
     GroupB_mean <- mean(dataB)
     Difference <- GroupA_mean - GroupB_mean
-    tabl <- data.frame(GroupA_mean, GroupB_mean, Difference)
-    return(tabl)
+    if(!is.nan(GroupA_mean) && !is.nan(GroupB_mean)){
+      return(paste0(
+        '<p style="padding-top:1em;">The observed mean for Group A is ',GroupA_mean,'.<br>',
+        'The observed mean for Group B is ',GroupB_mean,'.<br>',
+        'The observed difference in means is ',Difference,'.</p>'
+      ))
+    } else {
+      return(NULL)
+    }
   })
   
   # reset things if they enter new data  
@@ -182,6 +189,7 @@ shinyServer(function(input, output) {
       facet_grid( NewGroup ~ .) + 
       scale_y_continuous(name = "", breaks = NULL) + 
       xlim(limMin, limMax) + 
+      theme_bw()+
       theme(legend.position = "bottom") +
       geom_vline(aes(xintercept=grp.mean), mu,
                  linetype="dashed", color="black")

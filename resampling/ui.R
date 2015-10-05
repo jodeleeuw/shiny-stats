@@ -33,12 +33,12 @@ shinyUI(fluidPage(
                       hotable("tblA")),
                column(6, numericInput("obsB", "# of observations in Group B", 1, min = 1), 
                       hotable("tblB"))
-             )
+             ),
+             htmlOutput('observedSummary')
            ),
            wellPanel(
              column(12, plotOutput("groupsPlot") )
              ,
-             tableOutput('table'),
              fluidRow(
                column(12,
                       actionButton("flip1", "Run 1", css.class="btn-sm"),
