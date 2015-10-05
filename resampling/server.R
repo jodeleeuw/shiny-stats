@@ -10,8 +10,7 @@ library(ggplot2)
 
 # Function for getting the means when resampling
 getMean <- function(val, order){
-  getDf <- data.frame(val, order)
-  m <- mean(getDf[getDf[,"order"]=="A","val"]) - mean(getDf[getDf[,"order"]=="B","val"])
+  m <- mean(val[order=="A"]) - mean(val[order=="B"])
   return(m)
 }
 
@@ -24,6 +23,10 @@ shinyServer(function(input, output) {
     newOrder = character()
     # swapH = numeric() 
   )
+  
+  # store As and Bs in reactive expression, so that they only update once.
+  groupArv <- reactive({ hot.to.df(input$tblA) })
+  groupBrv <- reactive({ hot.to.df(input$tblB) })
   
   # hotable for group A
   output$tblA <- renderHotable({
@@ -45,9 +48,9 @@ shinyServer(function(input, output) {
   }, readOnly = FALSE)
   
   # table to show the means and mean difference of the groups
-  tab <- reactive({
-    dataA <- hot.to.df(input$tblA)
-    dataB <- hot.to.df(input$tblB)
+  output$table <- renderTable({
+    dataA <- groupArv()
+    dataB <- groupBrv()
     dataA$A <- as.numeric(dataA$A)
     dataB$B <- as.numeric(dataB$B)
     GroupA_mean <- mean(dataA$A)
@@ -55,9 +58,6 @@ shinyServer(function(input, output) {
     Difference <- GroupA_mean - GroupB_mean
     tabl <- data.frame(GroupA_mean, GroupB_mean, Difference)
     return(tabl)
-  })  
-  output$table <- renderTable({
-    tab()
   })
   
   # reset things if they enter new data  
@@ -114,9 +114,9 @@ shinyServer(function(input, output) {
   resample <- function(n){
     #for each resampling it shuffles data and gets the mean difference
     rv$started <- T
-    dataA <- hot.to.df(input$tblA)
+    dataA <- groupArv()
     dataA$A <- as.numeric(dataA$A)
-    dataB <- hot.to.df(input$tblB)
+    dataB <- groupBrv()
     dataB$B <- as.numeric(dataB$B)
     val <- c(as.numeric(dataA[!is.na(dataA[,"A"]),"A"]), as.numeric(dataB[!is.na(dataB[,"B"]),"B"]))
     group <- c(rep("A", length(dataA[!is.na(dataA[,"A"]),"A"])), rep("B", length(dataB[!is.na(dataB[,"B"]),"B"])) )
@@ -128,8 +128,8 @@ shinyServer(function(input, output) {
   
   # Plot the resampled data points
   output$groupsPlot <- renderPlot({
-    As <- hot.to.df(input$tblA)
-    Bs <- hot.to.df(input$tblB)
+    As <- groupArv()
+    Bs <- groupBrv()
     Values <- c(As[!is.na(As[,"A"]),"A"], Bs[!is.na(Bs[,"B"]),"B"])
     
     # if there's no data, the plot tells them something's funny
@@ -185,8 +185,8 @@ shinyServer(function(input, output) {
   # plot the histogram of means
   output$distPlot <- renderPlot({
     if(length(rv$outcomes)==0){ return(NULL) }
-    dataA <- hot.to.df(input$tblA)
-    dataB <- hot.to.df(input$tblB)
+    dataA <- groupArv()
+    dataB <- groupBrv()
     values <- c(as.numeric(dataA[!is.na(dataA[,"A"]),"A"]), as.numeric(dataB[!is.na(dataB[,"B"]),"B"]))
     data <- data.frame(table(rv$outcomes))
     colnames(data) <- c("val","freq")

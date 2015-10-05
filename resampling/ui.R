@@ -10,7 +10,7 @@ library(ggplot2)
 library(shinyjs)
 library(shinythemes)
 require(shinysky)
-library(shinyTable)
+#library(shinyTable)
 
 ## helper function for styled buttons
 actionButton <- function(inputId, label, btn.style = "" , css.class = "") {
@@ -24,43 +24,46 @@ actionButton <- function(inputId, label, btn.style = "" , css.class = "") {
 shinyUI(fluidPage(
   titlePanel('Resampling'),
   
-  sidebarPanel(
-    fluidRow(
-      column(5, numericInput("obsA", "Observations in Group A", 1, min = 1),
-             hotable("tblA")),
-      column(5, numericInput("obsB", "Observations in Group B", 1, min = 1), 
-             hotable("tblB") )),
-    br(),
-    column(12, plotOutput("groupsPlot") )
-    ,
-    tableOutput('table'),
-    fluidRow(
-      column(12,
-             actionButton("flip1", "Run 1", css.class="btn-sm"),
-             actionButton("flip10", "Run 10", css.class="btn-sm"),
-             actionButton("flip100", "Run 100", css.class="btn-sm"),
-             actionButton("flip1000", "Run 1000", css.class="btn-sm"),
-             actionButton("flip10000", "Run 10000", css.class="btn-sm"),
-             class="form-group")
+  fluidRow(
+    column(4,
+           wellPanel(
+             HTML('<legend>Observed Data</legend>'),
+             fluidRow(
+               column(6, numericInput("obsA", "# of observations in Group A", 1, min = 1),
+                      hotable("tblA")),
+               column(6, numericInput("obsB", "# of observations in Group B", 1, min = 1), 
+                      hotable("tblB"))
+             )
+           ),
+           wellPanel(
+             column(12, plotOutput("groupsPlot") )
+             ,
+             tableOutput('table'),
+             fluidRow(
+               column(12,
+                      actionButton("flip1", "Run 1", css.class="btn-sm"),
+                      actionButton("flip10", "Run 10", css.class="btn-sm"),
+                      actionButton("flip100", "Run 100", css.class="btn-sm"),
+                      actionButton("flip1000", "Run 1000", css.class="btn-sm"),
+                      actionButton("flip10000", "Run 10000", css.class="btn-sm"),
+                      class="form-group")
+             )
+           )
+    ),
+    column(8,
+           plotOutput("distPlot"),
+           wellPanel(
+             textOutput('rangeInfo'),
+             radioButtons('displayType', "Select range based on:",
+                          c("Difference of means" = "number",
+                            "Percentiles" = "percentile")),
+             selectInput("rangeType", "Select the outcomes that are", c("inside", "outside"), selected="inside"),
+             conditionalPanel('input.displayType == "number"',
+                              uiOutput('evaluationPanel')
+             ),
+             conditionalPanel('input.displayType == "percentile"',
+                              sliderInput("percentile", label="the percentile range", min=0,max=100,step=0.5, val = c(25,75))
+             )
+           )
     )
-  ),
-  
-  mainPanel(
-    plotOutput("distPlot"),
-    wellPanel(
-      textOutput('rangeInfo'),
-      radioButtons('displayType', "Select range based on:",
-                   c("Difference of means" = "number",
-                     "Percentiles" = "percentile")),
-      selectInput("rangeType", "Select the outcomes that are", c("inside", "outside"), selected="inside"),
-      conditionalPanel('input.displayType == "number"',
-                       uiOutput('evaluationPanel')
-      ),
-      conditionalPanel('input.displayType == "percentile"',
-                       sliderInput("percentile", label="the percentile range", min=0,max=100,step=0.5, val = c(25,75))
-      )
-    )
-  )
-  
-  
-))
+  )))
