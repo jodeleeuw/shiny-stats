@@ -36,11 +36,6 @@ shinyUI(fluidPage(
              )
            ),
            wellPanel(
-             HTML('<legend>Observed data summary</legend>'),
-             htmlOutput('observedSummary'),
-             plotOutput("groupsPlot")
-           ),
-           wellPanel(
              HTML('<legend>Run simulations</legend>'),
              fluidRow(
                column(12,
@@ -53,10 +48,17 @@ shinyUI(fluidPage(
                )
              )
              
+           ),
+           wellPanel(
+             HTML('<legend>Observed data summary</legend>'),
+             htmlOutput('observedSummary'),
+             plotOutput("groupsPlot")
            )
+           
     ),
     column(8,
-           plotOutput("distPlot"),
+           uiOutput("plotArea"),
+           #plotOutput("distPlot"),
            wellPanel(
              textOutput('rangeInfo')
            ),

@@ -20,6 +20,7 @@ shinyServer(function(input, output) {
     outcomes = numeric(),
     swapped = numeric(),
     started = F,
+    showResampledData = F,
     newOrder = character()
     # swapH = numeric() 
   )
@@ -106,22 +107,27 @@ shinyServer(function(input, output) {
   
   # run the resampler
   observeEvent(input$flip1, {
+    rv$showResampledData <- T
     resample(1)
   })
   
   observeEvent(input$flip10, {
+    rv$showResampledData <- F
     resample(10)
   })
   
   observeEvent(input$flip100, {
+    rv$showResampledData <- F
     resample(100)
   })
   
   observeEvent(input$flip1000, {
+    rv$showResampledData <- F
     resample(1000)
   })
   
   observeEvent(input$flip10000, {
+    rv$showResampledData <- F
     resample(10000)
   })
   
@@ -141,6 +147,149 @@ shinyServer(function(input, output) {
   
   # Plot the resampled data points
   output$groupsPlot <- renderPlot({
+    As <- groupArv()
+    Bs <- groupBrv()
+    Values <- c(As, Bs)
+    nodataflag <- F
+    
+    # if there's no data, the plot tells them something's funny
+    if(length(Values)<2){
+      Values <- c(0,0)
+      nodataflag <- T
+    }
+    OriginalGroup <- c(rep("A", length(As)), rep("B", length(Bs)))
+    if(length(OriginalGroup)<2){
+      OriginalGroup <- c("A", "B")
+    }
+    
+    # data frame for the plot
+    def <- data.frame(Values, OriginalGroup)
+    
+    # find the size of the biggest bin (if binsize = 1)
+    limtab <- as.data.frame(table(Values))
+    yMax <- max(limtab[,"Freq"])
+    limtab$Values <- as.numeric(limtab$Values)
+    yRange <- max(max(Values) - min(Values), 1)
+    yLength <- length(Values)
+    
+    # scale the binsize
+    wid <- (yRange)/(1.5*log(yRange^1.5+1)+(yLength^.5))
+    
+    # find the size of the biggest bin (when binsize  = wid)
+    yVal <- limtab[limtab[,"Freq"]==yMax,"Values"]
+    yMax2 <- sum(limtab[abs(limtab[,"Values"]-yVal<=wid), "Freq"])
+    
+    # scale the (relative) size of the dots
+    maxRat <- .4/log(yMax2^.05+1)+.6*(1-(1000/((max(Values, 1))+1000)))
+    
+    # scale the x axis (otherwise it gets too small when range = 1)
+    limMin <- min(def$Values)-wid*(yLength)*.4/(log(yRange^.8+1))
+    limMax <- max(def$Values)+wid*(yLength)*.4/(log(yRange^.8+1))
+    
+    mu <- data.frame(grp.mean = c(mean(def[def[,"OriginalGroup"]=="A","Values"]), mean(def[def[,"OriginalGroup"]=="B","Values"])),
+                     OriginalGroup = c("A", "B"))
+    p <- ggplot(def, aes(x = Values, fill = OriginalGroup))
+    if(nodataflag){
+      p <- p + geom_blank()
+    } else {
+      p <- p + geom_dotplot(binwidth=wid, stackgroups = TRUE, dotsize = maxRat, binpositions = "all")
+    }
+    p <- p + facet_grid( OriginalGroup ~ .) + 
+      scale_y_continuous(name = "", breaks = NULL) +
+      labs(x="\nObserved outcome")+
+      xlim(limMin, limMax) + 
+      theme_bw(base_size=14)+
+      scale_fill_discrete(guide=F)+
+      theme(legend.position = "bottom", 
+            plot.background = element_rect(fill="transparent", colour=NA), 
+            panel.background = element_rect(fill="transparent", colour=NA)
+      ) +
+      geom_vline(aes(xintercept=grp.mean), mu,
+                 linetype="dashed", color="black")
+    print(p)
+  }, bg="transparent")
+  
+  
+  output$plotArea <- renderUI({
+    if(rv$showResampledData && rv$started){
+      return(
+        fluidRow(
+          column(4,
+                 h3('Last resample'),
+                 plotOutput("resampledData")
+          ),
+          column(8,
+                 h3('All samples'),
+                 plotOutput("distPlot")
+          )
+        )
+      )
+    } else {
+      return(plotOutput("distPlot"))
+    }
+  })
+  
+  # plot the histogram of means
+  output$distPlot <- renderPlot({
+    if(length(rv$outcomes)==0){ return(NULL) }
+    dataA <- groupArv()
+    dataB <- groupBrv()
+    values <- c(dataA, dataB)
+    data <- data.frame(table(rv$outcomes))
+    colnames(data) <- c("val","freq")
+    data$val <- as.numeric(as.character(data$val))
+    data$freq <- as.numeric(as.character(data$freq))
+    
+    if(anyNA(data)){
+      data <- data.frame(val = c(0), freq = c(0))
+    }
+    
+    if(input$displayType == 'number'){
+      rng <- input$range
+    } else if(input$displayType == 'percentile'){
+      rng <- quantile(rv$outcomes, probs = input$percentile/100, type =1)
+    }
+    
+    data$inrange <- sapply(data$val, function(b){
+      if(input$rangeType == 'inside'){
+        if(b >= rng[1] & b <= rng[2]){
+          return("red")
+        } else {
+          return("black")
+        }
+      } else {
+        if(b >= rng[1] & b <= rng[2]){
+          return("black")
+        } else {
+          return("red")
+        }
+      }
+    })
+    
+    data$inrange <- as.factor(data$inrange)
+    
+    fillv <- levels(data$inrange)
+    
+    if(is.null(values)){
+      values <- c(-1, 1)
+    }
+    lim <- max(sd(values), max(abs(rv$outcomes)))+1
+    if(length(rv$outcomes)>10){
+      lim <- max(abs(rv$outcomes))+1
+    }
+    
+    p <- ggplot(data, aes(x=val,y=freq, fill = inrange)) +
+      geom_bar(stat="identity")+
+      labs(y="Frequency\n",x="\nDifference in means of resampled data")+
+      scale_fill_manual(guide=F, values=fillv)+
+      #scale_x_discrete(breaks=lab_breaks)+
+      theme_minimal(base_size=18) + 
+      xlim(-lim, lim)
+    return(p)
+    
+  })
+  
+  output$resampledData <- renderPlot({
     As <- groupArv()
     Bs <- groupBrv()
     Values <- c(As, Bs)
@@ -201,71 +350,11 @@ shinyServer(function(input, output) {
       theme(legend.position = "bottom", 
             plot.background = element_rect(fill="transparent", colour=NA), 
             panel.background = element_rect(fill="transparent", colour=NA)
-            ) +
+      ) +
       geom_vline(aes(xintercept=grp.mean), mu,
                  linetype="dashed", color="black")
     print(p)
   }, bg="transparent")
-  
-  # plot the histogram of means
-  output$distPlot <- renderPlot({
-    if(length(rv$outcomes)==0){ return(NULL) }
-    dataA <- groupArv()
-    dataB <- groupBrv()
-    values <- c(dataA, dataB)
-    data <- data.frame(table(rv$outcomes))
-    colnames(data) <- c("val","freq")
-    data$val <- as.numeric(as.character(data$val))
-    data$freq <- as.numeric(as.character(data$freq))
-    
-    if(anyNA(data)){
-      data <- data.frame(val = c(0), freq = c(0))
-    }
-    
-    if(input$displayType == 'number'){
-      rng <- input$range
-    } else if(input$displayType == 'percentile'){
-      rng <- quantile(rv$outcomes, probs = input$percentile/100, type =1)
-    }
-    
-    data$inrange <- sapply(data$val, function(b){
-      if(input$rangeType == 'inside'){
-        if(b >= rng[1] & b <= rng[2]){
-          return("red")
-        } else {
-          return("black")
-        }
-      } else {
-        if(b >= rng[1] & b <= rng[2]){
-          return("black")
-        } else {
-          return("red")
-        }
-      }
-    })
-    
-    data$inrange <- as.factor(data$inrange)
-    
-    fillv <- levels(data$inrange)
-    
-    if(is.null(values)){
-      values <- c(-1, 1)
-    }
-    lim <- max(sd(values), max(abs(rv$outcomes)))+1
-    if(length(rv$outcomes)>10){
-      lim <- max(abs(rv$outcomes))+1
-    }
-    
-    p <- ggplot(data, aes(x=val,y=freq, fill = inrange)) +
-      geom_bar(stat="identity")+
-      labs(y="# of resamples\n",x="\n mean of resample")+
-      scale_fill_manual(guide=F, values=fillv)+
-      #scale_x_discrete(breaks=lab_breaks)+
-      theme_minimal(base_size=18) + 
-      xlim(-lim, lim)
-    return(p)
-    
-  })
   
   output$evaluationPanel <- renderUI({
     maxV <- ceiling(max(rv$outcomes))
