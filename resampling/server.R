@@ -29,14 +29,24 @@ shinyServer(function(input, output) {
   groupArv <- reactive({ 
     data <- hot.to.df(input$tblA) 
     vectorData <- data$A
+    if(is.null(vectorData)){return(NULL)}
     vectorData <- vectorData[!is.na(vectorData)]
     return(as.numeric(vectorData))
   })
   groupBrv <- reactive({ 
     data <- hot.to.df(input$tblB) 
     vectorData <- data$B
+    if(is.null(vectorData)){return(NULL)}
     vectorData <- vectorData[!is.na(vectorData)]
     return(as.numeric(vectorData))
+  })
+  lastResampleDiff <- reactive({
+    As <- groupArv()
+    Bs <- groupBrv()
+    Values <- c(As, Bs)
+    NewGroup <- rv$newOrder
+    diff <- round(mean(Values[NewGroup=="A"]) - mean(Values[NewGroup=="B"]),digits=2)
+    return(diff)
   })
   
   # hotable for group A
@@ -56,7 +66,7 @@ shinyServer(function(input, output) {
     }
     datA <- data.frame(Obs = c(1:timesB), B = as.numeric(c(rep(NA, timesB))))
     return(datA)
-  }, readOnly = FALSE)
+  }, readOnly = c(TRUE, FALSE))
   
   # table to show the means and mean difference of the groups
   output$observedSummary <- renderText({
@@ -67,9 +77,9 @@ shinyServer(function(input, output) {
     Difference <- GroupA_mean - GroupB_mean
     if(!is.nan(GroupA_mean) && !is.nan(GroupB_mean)){
       return(paste0(
-        '<p>The observed mean for Group A is ',GroupA_mean,'.<br>',
-        'The observed mean for Group B is ',GroupB_mean,'.<br>',
-        'The observed difference in means is ',Difference,'.</p>'
+        '<p>The observed mean for Group A is ',round(GroupA_mean,digits=2),'.<br>',
+        'The observed mean for Group B is ',round(GroupB_mean,digits=2),'.<br>',
+        'The observed difference in means is ',round(Difference,digits=2),'.</p>'
       ))
     } else {
       return(NULL)
@@ -209,14 +219,14 @@ shinyServer(function(input, output) {
     print(p)
   }, bg="transparent")
   
-  
   output$plotArea <- renderUI({
     if(rv$showResampledData && rv$started){
       return(
         fluidRow(
           column(4,
                  h3('Last resample'),
-                 plotOutput("resampledData")
+                 plotOutput("resampledData"),
+                 textOutput("lastResampleDiff")
           ),
           column(8,
                  h3('All samples'),
@@ -232,17 +242,12 @@ shinyServer(function(input, output) {
   # plot the histogram of means
   output$distPlot <- renderPlot({
     if(length(rv$outcomes)==0){ return(NULL) }
-    dataA <- groupArv()
-    dataB <- groupBrv()
-    values <- c(dataA, dataB)
-    data <- data.frame(table(rv$outcomes))
-    colnames(data) <- c("val","freq")
-    data$val <- as.numeric(as.character(data$val))
-    data$freq <- as.numeric(as.character(data$freq))
+    h <- hist(rv$outcomes)
+    freqtable <- data.frame(val=h$mids,freq=h$counts,min=h$breaks[1:(length(h$breaks)-1)],max=h$breaks[2:length(h$breaks)])
     
-    if(anyNA(data)){
-      data <- data.frame(val = c(0), freq = c(0))
-    }
+    #if(anyNA(data)){
+    #  data <- data.frame(val = c(0), freq = c(0))
+    #}
     
     if(input$displayType == 'number'){
       rng <- input$range
@@ -250,26 +255,35 @@ shinyServer(function(input, output) {
       rng <- quantile(rv$outcomes, probs = input$percentile/100, type =1)
     }
     
-    data$inrange <- sapply(data$val, function(b){
+    freqtable$inrange <- mapply(function(low,high){
+      if(rv$showResampledData){
+        last <- lastResampleDiff()
+        if(last >= low & last < high){
+          return("deepskyblue2")
+        }
+      }
       if(input$rangeType == 'inside'){
-        if(b >= rng[1] & b <= rng[2]){
+        if(low >= rng[1] & high < rng[2]){
           return("red")
         } else {
           return("black")
         }
       } else {
-        if(b >= rng[1] & b <= rng[2]){
+        if(high >= rng[1] & low < rng[2]){
           return("black")
         } else {
           return("red")
         }
       }
-    })
+    }, freqtable$min, freqtable$max)
     
-    data$inrange <- as.factor(data$inrange)
+    freqtable$inrange <- as.factor(freqtable$inrange)
     
-    fillv <- levels(data$inrange)
+    fillv <- levels(freqtable$inrange)
     
+    dataA <- groupArv()
+    dataB <- groupBrv()
+    values <- c(dataA, dataB)
     if(is.null(values)){
       values <- c(-1, 1)
     }
@@ -278,15 +292,23 @@ shinyServer(function(input, output) {
       lim <- max(abs(rv$outcomes))+1
     }
     
-    p <- ggplot(data, aes(x=val,y=freq, fill = inrange)) +
+    p <- ggplot(freqtable, aes(x=val,y=freq, fill = inrange)) +
       geom_bar(stat="identity")+
       labs(y="Frequency\n",x="\nDifference in means of resampled data")+
       scale_fill_manual(guide=F, values=fillv)+
       #scale_x_discrete(breaks=lab_breaks)+
       theme_minimal(base_size=18) + 
-      xlim(-lim, lim)
+      coord_cartesian(xlim=c(-lim, lim))
     return(p)
     
+  })
+  
+  output$lastResampleDiff <- renderText({
+    if(rv$showResampledData==F){
+      return(NULL)
+    }
+    diff <- lastResampleDiff()
+    return(paste0("The resampled difference in means is ", diff))
   })
   
   output$resampledData <- renderPlot({
@@ -357,14 +379,14 @@ shinyServer(function(input, output) {
   }, bg="transparent")
   
   output$evaluationPanel <- renderUI({
-    maxV <- ceiling(max(rv$outcomes))
-    if(is.infinite(maxV)){
+    if(is.null(rv$outcomes)){
       maxV <- 0
-    }
-    minV <-floor(min(rv$outcomes))
-    if(is.infinite(minV)){
       minV <- 0
+    } else {
+      maxV <- ceiling(max(rv$outcomes))
+      minV <-floor(min(rv$outcomes))
     }
+    
     if(length(rv$outcomes)<10){
       if(abs(minV)>=abs(maxV)){
         maxV <- -minV
