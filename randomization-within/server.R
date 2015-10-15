@@ -11,7 +11,7 @@ library(ggplot2)
 # Function for getting the means when resampling
 getMean <- function(val, order){
   v <- mapply(function(val, flip){
-    if(flip){ return(val) }
+    if(!flip){ return(val) }
     else { return(-val) }
   }, val,order)
   m <- mean(v)
@@ -30,21 +30,28 @@ shinyServer(function(input, output) {
   )
   
   # store As and Bs in reactive expression, so that they only update once.
+  
+  getDataTable <- reactive({
+    data <- hot.to.df(input$tblA)
+    return(data)
+  })
+  
   dataDiffRV <- reactive({ 
-    data <- hot.to.df(input$tblA) 
-    if(is.null(data$A)){return(NULL)}
+    data <- getDataTable()
+    if(is.null(data)){ return(NULL) }
+    #if(is.null(data$A)){return(NULL)}
     diff <- data$A - data$B
     diff <- diff[!is.na(diff)]
     return(as.numeric(diff))
   })
   dataAmeanRV <- reactive({
-    data <- hot.to.df(input$tblA) 
-    if(is.null(data$A)){return(NULL)}
+    data <- getDataTable()
+    if(is.null(data)){ return(NULL) }
     return(mean(data$A))
   })
   dataBmeanRV <- reactive({
-    data <- hot.to.df(input$tblA) 
-    if(is.null(data$B)){return(NULL)}
+    data <- getDataTable()
+    if(is.null(data)){ return(NULL) }
     return(mean(data$B))
   })
   lastResampleDiff <- reactive({
@@ -66,12 +73,16 @@ shinyServer(function(input, output) {
   output$observedSummary <- renderText({
     GroupA_mean <- dataAmeanRV()
     GroupB_mean <- dataBmeanRV()
-    Difference <- mean(dataDiffRV())
-    if(!is.nan(GroupA_mean) && !is.nan(GroupB_mean)){
+    Difference <- dataDiffRV()
+    if(is.null(GroupA_mean) || is.null(GroupB_mean) || is.null(Difference)){
+      return(NULL)
+    }
+    Difference <- mean(Difference)
+    if(!is.na(GroupA_mean) && !is.na(GroupB_mean)){
       return(paste0(
-        '<p>The observed mean for Group A is ',round(GroupA_mean,digits=2),'.<br>',
-        'The observed mean for Group B is ',round(GroupB_mean,digits=2),'.<br>',
-        'The observed difference in means is ',round(Difference,digits=2),'.</p>'
+        '<p>The observed mean for condition A is ',round(GroupA_mean,digits=2),'.<br>',
+        'The observed mean for condition B is ',round(GroupB_mean,digits=2),'.<br>',
+        'The observed mean difference is ',round(Difference,digits=2),'.</p>'
       ))
     } else {
       return(NULL)
@@ -140,73 +151,69 @@ shinyServer(function(input, output) {
     diff <- dataDiffRV()
     orders <- replicate(n, {return(rbinom(length(diff),1,0.5)==1)})
     rv$newOrder <- orders[,n]
-    m <- apply(orders, MARGIN = 2, FUN = getMean, val = val )
+    m <- apply(orders, MARGIN = 2, FUN = getMean, val = diff )
     rv$outcomes <- c(rv$outcomes, m)
   }
   
   # Plot the resampled data points
-  #   output$groupsPlot <- renderPlot({
-  #     As <- groupArv()
-  #     Bs <- groupBrv()
-  #     Values <- c(As, Bs)
-  #     nodataflag <- F
-  #     
-  #     # if there's no data, the plot tells them something's funny
-  #     if(length(Values)<2){
-  #       Values <- c(0,0)
-  #       nodataflag <- T
-  #     }
-  #     OriginalGroup <- c(rep("A", length(As)), rep("B", length(Bs)))
-  #     if(length(OriginalGroup)<2){
-  #       OriginalGroup <- c("A", "B")
-  #     }
-  #     
-  #     # data frame for the plot
-  #     def <- data.frame(Values, OriginalGroup)
-  #     
-  #     # find the size of the biggest bin (if binsize = 1)
-  #     limtab <- as.data.frame(table(Values))
-  #     yMax <- max(limtab[,"Freq"])
-  #     limtab$Values <- as.numeric(limtab$Values)
-  #     yRange <- max(max(Values) - min(Values), 1)
-  #     yLength <- length(Values)
-  #     
-  #     # scale the binsize
-  #     wid <- (yRange)/(1.5*log(yRange^1.5+1)+(yLength^.5))
-  #     
-  #     # find the size of the biggest bin (when binsize  = wid)
-  #     yVal <- limtab[limtab[,"Freq"]==yMax,"Values"]
-  #     yMax2 <- sum(limtab[abs(limtab[,"Values"]-yVal<=wid), "Freq"])
-  #     
-  #     # scale the (relative) size of the dots
-  #     maxRat <- .4/log(yMax2^.05+1)+.6*(1-(1000/((max(Values, 1))+1000)))
-  #     
-  #     # scale the x axis (otherwise it gets too small when range = 1)
-  #     limMin <- min(def$Values)-wid*(yLength)*.4/(log(yRange^.8+1))
-  #     limMax <- max(def$Values)+wid*(yLength)*.4/(log(yRange^.8+1))
-  #     
-  #     mu <- data.frame(grp.mean = c(mean(def[def[,"OriginalGroup"]=="A","Values"]), mean(def[def[,"OriginalGroup"]=="B","Values"])),
-  #                      OriginalGroup = c("A", "B"))
-  #     p <- ggplot(def, aes(x = Values, fill = OriginalGroup))
-  #     if(nodataflag){
-  #       p <- p + geom_blank()
-  #     } else {
-  #       p <- p + geom_dotplot(binwidth=wid, stackgroups = TRUE, dotsize = maxRat, binpositions = "all")
-  #     }
-  #     p <- p + facet_grid( OriginalGroup ~ .) + 
-  #       scale_y_continuous(name = "", breaks = NULL) +
-  #       labs(x="\nObserved outcome")+
-  #       xlim(limMin, limMax) + 
-  #       theme_bw(base_size=14)+
-  #       scale_fill_discrete(guide=F)+
-  #       theme(legend.position = "bottom", 
-  #             plot.background = element_rect(fill="transparent", colour=NA), 
-  #             panel.background = element_rect(fill="transparent", colour=NA)
-  #       ) +
-  #       geom_vline(aes(xintercept=grp.mean), mu,
-  #                  linetype="dashed", color="black")
-  #     print(p)
-  #   }, bg="transparent")
+  output$groupsPlot <- renderPlot({
+    data <- dataDiffRV()
+    nodataflag <- F
+    
+    # if there's no data, the plot tells them something's funny
+    if(length(data)<2){
+      data <- c(0,0)
+      nodataflag <- T
+    }
+    
+    df <- data.frame(Values=data)
+    
+    if(nodataflag){
+      limMin <- -10
+      limMax <- 10
+    } else {
+      # find the size of the biggest bin (if binsize = 1)
+      limtab <- as.data.frame(table(data))
+      yMax <- max(limtab[,"Freq"])
+      limtab$data <- as.numeric(limtab$data)
+      yRange <- max(max(data) - min(data), 1)
+      yLength <- length(data)
+      
+      # scale the binsize
+      wid <- (yRange)/(1.5*log(yRange^1.5+1)+(yLength^.5))
+      
+      # find the size of the biggest bin (when binsize  = wid)
+      yVal <- limtab[limtab[,"Freq"]==yMax,"data"]
+      yMax2 <- sum(limtab[abs(limtab[,"data"]-yVal<=wid), "Freq"])
+      
+      # scale the (relative) size of the dots
+      maxRat <- .4/log(yMax2^.05+1)+.6*(1-(1000/((max(data, 1))+1000)))
+      
+      # scale the x axis (otherwise it gets too small when range = 1)
+      limMin <- min(df$Values)-wid*(yLength)*.4/(log(yRange^.8+1))
+      limMax <- max(df$Values)+wid*(yLength)*.4/(log(yRange^.8+1))
+    }
+    
+    p <- ggplot(df, aes(x = Values, fill = 'A'))
+    if(nodataflag){
+      p <- p + geom_blank()
+    } else {
+      p <- p + geom_dotplot(binwidth=wid, stackgroups = TRUE, dotsize = maxRat, binpositions = "all")
+    }
+    p <- p +
+      scale_y_continuous(name = "", breaks = NULL) +
+      labs(x="\nObserved outcome")+
+      xlim(limMin, limMax) + 
+      theme_bw(base_size=14)+
+      scale_fill_discrete(guide=F)+
+      theme(legend.position = "bottom", 
+            plot.background = element_rect(fill="transparent", colour=NA), 
+            panel.background = element_rect(fill="transparent", colour=NA)
+      ) +
+      geom_vline(xintercept=mean(data),
+                 linetype="dashed", color="black")
+    print(p)
+  }, bg="transparent")
   
   output$plotArea <- renderUI({
     if(rv$showResampledData && rv$started){
@@ -270,16 +277,11 @@ shinyServer(function(input, output) {
     
     fillv <- levels(freqtable$inrange)
     
-    dataA <- groupArv()
-    dataB <- groupBrv()
-    values <- c(dataA, dataB)
+    values <- dataDiffRV()
     if(is.null(values)){
       values <- c(-1, 1)
     }
-    lim <- max(sd(values), max(abs(rv$outcomes)))+1
-    if(length(rv$outcomes)>10){
-      lim <- max(abs(rv$outcomes))+1
-    }
+    lim <- mean(abs(values))*1.2
     
     p <- ggplot(freqtable, aes(x=val,y=freq, fill = inrange)) +
       geom_bar(stat="identity")+
@@ -305,12 +307,16 @@ shinyServer(function(input, output) {
     data <- dataDiffRV()
     df <- data.frame(Value=data)
     df$NewGroup <- rv$newOrder
+    df$Value <- mapply(function(d,o){
+      if(o){return(-d)}
+      else { return(d) }
+    }, df$Value, df$NewGroup)
     
     
     # find the size of the biggest bin (if binsize = 1)
     limtab <- as.data.frame(table(data))
     yMax <- max(limtab[,"Freq"])
-    limtab$Values <- as.numeric(limtab$Values)
+    limtab$data <- as.numeric(limtab$data)
     yRange <- max(max(data) - min(data), 1)
     yLength <- length(data)
     
@@ -318,25 +324,23 @@ shinyServer(function(input, output) {
     wid <- (yRange)/(1.5*log(yRange^1.5+1)+(yLength^.5))
     
     # find the size of the biggest bin (when binsize  = wid)
-    yVal <- limtab[limtab[,"Freq"]==yMax,"Values"]
-    yMax2 <- sum(limtab[abs(limtab[,"Values"]-yVal<=wid), "Freq"])
+    yVal <- limtab[limtab[,"Freq"]==yMax,"data"]
+    yMax2 <- sum(limtab[abs(limtab[,"data"]-yVal<=wid), "Freq"])
     
     # scale the (relative) size of the dots
     maxRat <- .4/log(yMax2^.05+1)+.6*(1-(1000/((max(data, 1))+1000)))
     
     # scale the x axis (otherwise it gets too small when range = 1)
-    limMin <- min(data)-wid*(yLength)*.4/(log(yRange^.8+1))
-    limMax <- max(data)+wid*(yLength)*.4/(log(yRange^.8+1))
+    limMin <- -max(abs(data))
+    limMax <- max(abs(data))
     
-    p <- ggplot(df, aes(x = Values, fill = NewGroup))
-    if(nodataflag){
-      p <- p + geom_blank()
-    } else {
-      p <- p + geom_dotplot(binwidth=wid, stackgroups = TRUE, dotsize = maxRat, binpositions = "all")
-    }
-    p <- p + facet_grid( NewGroup ~ .) + 
+    p <- ggplot(df, aes(x = Value, fill = NewGroup))
+    
+    p <- p + geom_dotplot(binwidth=wid, stackgroups = TRUE, dotsize = maxRat, binpositions = "all")
+    
+    p <- p +
       scale_y_continuous(name = "", breaks = NULL) +
-      labs(x="\nObserved outcome")+
+      labs(x="\nObserved difference (condition A - condition B)")+
       xlim(limMin, limMax) + 
       theme_bw(base_size=14)+
       scale_fill_discrete(guide=F)+
@@ -344,7 +348,7 @@ shinyServer(function(input, output) {
             plot.background = element_rect(fill="transparent", colour=NA), 
             panel.background = element_rect(fill="transparent", colour=NA)
       ) +
-      geom_vline(xintercept=mean(data), linetype="dashed", color="black")
+      geom_vline(xintercept=mean(df$Value), linetype="dashed", color="black")
     print(p)
   }, bg="transparent")
   
