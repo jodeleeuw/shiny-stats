@@ -416,7 +416,7 @@ shinyServer(function(input, output) {
     
     mu <- data.frame(grp.mean = c(mean(def[def[,"OriginalGroup"]=="A","Values"]), mean(def[def[,"OriginalGroup"]=="B","Values"]),
                                   mean(def[def[,"OriginalGroup"]=="C","Values"])), OriginalGroup = c("A", "B", "C"))
-    p <- ggplot(def, aes(x = Values, fill = OriginalGroup))
+    p <- ggplot(def, aes(x = Values))
     if(nodataflag){
       p <- p + geom_blank()
     } else {
@@ -427,7 +427,7 @@ shinyServer(function(input, output) {
       labs(x="\nObserved outcome")+
       xlim(limMin, limMax) + 
       theme_bw(base_size=14)+
-      scale_fill_discrete(guide=F)+
+      #scale_fill_discrete(guide=F)+
       theme(legend.position = "bottom", 
             plot.background = element_rect(fill="transparent", colour=NA), 
             panel.background = element_rect(fill="transparent", colour=NA)
