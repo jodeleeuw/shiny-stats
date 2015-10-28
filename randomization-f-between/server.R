@@ -79,6 +79,13 @@ shinyServer(function(input, output) {
     f <- round(calculate.f(newList),digits=2)
     return(f)
   })
+  observed.f <- reactive({
+    dataA <- groupArv()
+    dataB <- groupBrv()
+    dataC <- groupCrv()
+    f <- calculate.f(lst = list(a1 = dataA, a2 = dataB, a3 = dataC))
+    return(f)
+  })
   
   # hotable for group A
   output$tblA <- renderHotable({
@@ -115,7 +122,7 @@ shinyServer(function(input, output) {
     GroupA_mean <- mean(dataA)
     GroupB_mean <- mean(dataB)
     GroupC_mean <- mean(dataC)
-    f <- calculate.f(lst = list(a1 = dataA, a2 = dataB, a3 = dataC))
+    f <- observed.f()
     if(!is.nan(GroupA_mean) && !is.nan(GroupB_mean)){
       return(paste0(
         '<p>The observed mean for Group A is ',round(GroupA_mean,digits=2),'.<br>',
@@ -442,7 +449,7 @@ shinyServer(function(input, output) {
       maxV <- 0
       minV <- 0
     } else {
-      maxV <- ceiling(max(rv$outcomes))
+      maxV <- max(ceiling(1+observed.f()),ceiling(max(rv$outcomes)))
       # minV <-floor(min(rv$outcomes))
       minV <- 0
     }
