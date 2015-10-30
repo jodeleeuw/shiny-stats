@@ -23,6 +23,18 @@ shinyServer(function(input, output) {
     }
   })
   
+  createFiniteIQPopulation <- function(){
+    rv$iqPopulation <- data.frame(IQ=rnorm(input$iqPopSize, mean=input$iqMean, sd=input$iqSD), Sampled=F)
+  }
+  
+  sampleIQ <- function(n){
+    if(input$iqPopSizeSelect){
+      sampleFromFiniteIQPopulation(n)
+    } else {
+      sampleFromInfiniteIQPopulation(n)
+    }
+  }
+  
   sampleFromInfiniteIQPopulation <- function(n){
     s <- rnorm(n, mean=input$iqMean, sd=input$iqSD)
     if(is.null(rv$iqSample)){
@@ -32,15 +44,66 @@ shinyServer(function(input, output) {
     }
   }
   
+  sampleFromFiniteIQPopulation <- function(n){
+    opts <- which(rv$iqPopulation$Sampled==F)
+    if(length(opts) < n){
+      n <- length(opts)
+      if(n == 0){
+        return()
+      }
+    }
+    s <- sample(opts, n)
+    rv$iqPopulation$Sampled[s] <- T
+    if(is.null(rv$iqSample)){
+      rv$iqSample <- rv$iqPopulation$IQ[s]
+    } else {
+      rv$iqSample <- c(rv$iqSample, rv$iqPopulation$IQ[s])
+    }
+  }
+  
+  reset <- function(){
+    rv$iqPopulation = NULL
+    rv$iqSample = NULL
+    if(input$iqPopSizeSelect){
+      createFiniteIQPopulation()
+    }
+  }
+  
+  observeEvent(input$add1, {
+    sampleIQ(1)
+  })
+  
+  observeEvent(input$add10, {
+    sampleIQ(10)
+  })
+  
   observeEvent(input$add100, {
-    sampleFromInfiniteIQPopulation(100)
+    sampleIQ(100)
+  })
+  
+  observeEvent(input$add1000, {
+    sampleIQ(1000)
+  })
+  
+  observeEvent(input$reset, {
+    reset()
+  })
+  
+  observe({
+    fixed <- input$iqPopSizeSelect
+    n <- input$iqPopSize
+    if(fixed){
+      createFiniteIQPopulation()
+    }
   })
   
   output$iqPopulationPlot <- renderPlot({
+    limit <- c(input$iqMean - input$iqSD*6, input$iqMean + input$iqSD*6)
     
     if(input$iqPopSizeSelect){
-      rv$iqPopulation <- data.frame(IQ=rnorm(input$iqPopSize, mean=input$iqMean, sd=input$iqSD))
+      
       ggplot(rv$iqPopulation, aes(x=IQ))+
+        coord_cartesian(xlim=limit)+
         geom_histogram(binwidth = input$iqSD/5)+
         geom_vline(xintercept = mean(rv$iqPopulation$IQ))+
         labs(y="Frequency\n",x="\nIQ")+
@@ -48,7 +111,6 @@ shinyServer(function(input, output) {
       
     } else {
       
-      limit <- c(input$iqMean - input$iqSD*6, input$iqMean + input$iqSD*6)
       ggplot(data.frame(x = limit), aes(x)) +
         coord_cartesian(xlim=limit)+
         stat_function(fun = dnorm, args = list(mean=input$iqMean, sd=input$iqSD))+
@@ -73,7 +135,7 @@ shinyServer(function(input, output) {
       limit <- c(input$iqMean - input$iqSD*6, input$iqMean + input$iqSD*6)
       ggplot(data.frame(IQ = rv$iqSample), aes(x=IQ))+
         coord_cartesian(xlim=limit)+
-        geom_histogram(binwidth = max(1, sd(rv$iqSample)/5))+
+        geom_histogram(binwidth = input$iqSD/5)+
         geom_vline(xintercept = mean(rv$iqSample))+
         labs(y="Frequency\n",x="\nIQ")+
         theme_minimal(base_size=18)
@@ -91,13 +153,15 @@ shinyServer(function(input, output) {
       cavg <- cumsum(rv$iqSample) / (1:length(rv$iqSample))
       size <- 1:length(rv$iqSample)
       error <- abs(cavg - iqPopAvg())
+      
+      ggplot(data.frame(samplesize = size, sampleerror = error, samplemean=cavg),
+             aes(x=samplesize, y=samplemean))+
+        geom_line()+
+        geom_hline(yintercept=iqPopAvg())+
+        coord_cartesian(ylim=c(iqPopAvg() - input$iqSD*1.5, iqPopAvg() + input$iqSD*1.5))+
+        labs(x="\nSample size",y="Mean of the sample\n")+
+        theme_minimal(base_size=18)
     }
-    
-    ggplot(data.frame(samplesize = size, sampleerror = error, samplemean=cavg),
-           aes(x=samplesize, y=samplemean))+
-      geom_line()+
-      geom_hline(yintercept=iqPopAvg())+
-      theme_minimal(base_size=18)
   })
   
 })

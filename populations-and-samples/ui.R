@@ -47,10 +47,23 @@ shinyUI(fluidPage(
   ),
   column(
     8,
-    plotOutput('iqPopulationPlot'),
-    wellPanel(textOutput('iqPopulationSummary')),
-    plotOutput('iqSamplePlot'),
-    wellPanel(textOutput('iqSampleSummary')),
-    plotOutput('iqSamplingErrorPlot')
+    conditionalPanel(
+      condition = "input.populationType == 'iq'",
+      column(
+        6,
+        plotOutput('iqPopulationPlot', height="250px"),
+        plotOutput('iqSamplePlot', height="250px"),
+        wellPanel(
+          textOutput('iqPopulationSummary'),
+          textOutput('iqSampleSummary')
+        )
+      ),
+      column(
+        6,
+        plotOutput('iqSamplingErrorPlot')
+      )
+      
+    )
+    
   )
 ))
