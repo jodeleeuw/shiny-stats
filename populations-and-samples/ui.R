@@ -1,11 +1,5 @@
-
-# This is the user-interface definition of a Shiny web application.
-# You can find out more about building applications with Shiny here:
-#
-# http://shiny.rstudio.com
-#
-
 library(shiny)
+require(shinysky)
 
 shinyUI(fluidPage(
   
@@ -27,13 +21,20 @@ shinyUI(fluidPage(
         checkboxInput("iqPopSizeSelect", "Specify the population size?", FALSE),
         conditionalPanel(
           condition= "input.iqPopSizeSelect == true",
-          p("This option will let you specify the exact number of individuals in the population. However, the population mean and standard deviation will not exactly match the parameters above. The actual mean and standard deviation will be shown under the graph of the population."),
+          p("This option will let you specify the exact number of individuals in the population. However, the population mean and standard deviation will not exactly match the parameters above. The actual mean will be shown under the graph of the population."),
           numericInput("iqPopSize", "How many individuals are in the population?", 10000, step=1)
         )
       ),
       conditionalPanel(
         condition = "input.populationType == 'election'",
-        numericInput("electionN", "How many candidates?", value=2,min=2, step=1)
+        numericInput("electionN", "How many candidates?", value=2,min=2, step=1),
+        hotable("electionCandidates"),
+        checkboxInput("electionPopSizeSelect", "Specify the population size?", FALSE),
+        conditionalPanel(
+          condition= "input.electionPopSizeSelect == true",
+          p("This option will let you specify the exact number of individuals in the population. "),
+          numericInput("electionPopSize", "How many individuals are in the population?", 10000, step=1)
+        )
       )
     ),
     wellPanel(
@@ -62,7 +63,22 @@ shinyUI(fluidPage(
         6,
         plotOutput('iqSamplingErrorPlot')
       )
-      
+    ),
+    conditionalPanel(
+      condition = "input.populationType == 'election'",
+      column(
+        6,
+        plotOutput('electionPopulationPlot', height="250px"),
+        plotOutput('electionSamplePlot', height="250px"),
+        wellPanel(
+          textOutput('electionPopulationSummary'),
+          textOutput('electionSampleSummary')
+        )
+      ),
+      column(
+        6,
+        plotOutput('electionSamplingErrorPlot')
+      )
     )
     
   )

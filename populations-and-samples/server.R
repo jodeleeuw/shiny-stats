@@ -1,18 +1,15 @@
-
-# This is the server logic for a Shiny web application.
-# You can find out more about building applications with Shiny here:
-#
-# http://shiny.rstudio.com
-#
-
 library(shiny)
 library(ggplot2)
+library(randomNames)
 
 shinyServer(function(input, output) {
   
   rv <- reactiveValues(
     iqPopulation = NULL,
-    iqSample = NULL
+    iqSample = NULL,
+    electionCandidates = NULL,
+    electionPopulation = NULL,
+    electionSample = NULL
   )
   
   iqPopAvg <- reactive({
@@ -25,6 +22,30 @@ shinyServer(function(input, output) {
   
   createFiniteIQPopulation <- function(){
     rv$iqPopulation <- data.frame(IQ=rnorm(input$iqPopSize, mean=input$iqMean, sd=input$iqSD), Sampled=F)
+  }
+  
+  createElectionCandidates <- function(){
+    names <- randomNames(input$electionN, name.order = "first.last", name.sep=" ")
+    electionData <- data.frame(Candidate = names, 'Percent Support'=(100/input$electionN), check.names=F)
+    rv$electionCandidates <- electionData
+  }
+  
+  createFiniteElectionPopulation <- function(){
+    n <- input$electionPopSize
+    support <- rv$electionCandidates$`Percent Support`
+    votes <- n*support/100
+    rv$electionPopulation <- data.frame(Candidate=rep(rv$electionCandidates$Candidate,votes), Sampled=F)
+  }
+  
+  #### sampling methods ####
+  
+  sample <- function(n){
+    if(input$populationType == 'iq'){
+      sampleIQ(n)
+    }
+    if(input$populationType == 'election'){
+      sampleElection(n)
+    }
   }
   
   sampleIQ <- function(n){
@@ -61,6 +82,16 @@ shinyServer(function(input, output) {
     }
   }
   
+  sampleElection <- function(n){
+    if(input$electionPopSizeSelect){
+      sampleFromFiniteElectionPopulation(n)
+    } else {
+      sampleFromInfiniteElectionPopulation(n)
+    }
+  }
+  
+  #### reset simulation ####
+  
   reset <- function(){
     rv$iqPopulation = NULL
     rv$iqSample = NULL
@@ -68,6 +99,8 @@ shinyServer(function(input, output) {
       createFiniteIQPopulation()
     }
   }
+  
+  #### button handlers ####
   
   observeEvent(input$add1, {
     sampleIQ(1)
@@ -89,6 +122,8 @@ shinyServer(function(input, output) {
     reset()
   })
   
+  #### generate new populations ####
+  
   observe({
     fixed <- input$iqPopSizeSelect
     n <- input$iqPopSize
@@ -96,6 +131,28 @@ shinyServer(function(input, output) {
       createFiniteIQPopulation()
     }
   })
+  
+  observe({
+    type <- input$populationType
+    n <- input$electionN
+    createElectionCandidates()
+  })
+  
+  observe({
+    fixed <- input$electionPopSizeSelect
+    data <- rv$electionCandidates
+    if(fixed){
+      createFiniteElectionPopulation()
+    }
+  })
+  
+  #### UI ####
+  
+  output$electionCandidates <- renderHotable({
+    rv$electionCandidates
+  }, readOnly = c(T,F))
+  
+  #### output IQ ####
   
   output$iqPopulationPlot <- renderPlot({
     limit <- c(input$iqMean - input$iqSD*6, input$iqMean + input$iqSD*6)
@@ -122,9 +179,9 @@ shinyServer(function(input, output) {
   
   output$iqPopulationSummary <- renderText({
     if(input$iqPopSizeSelect){
-      paste0('There are ',input$iqPopSize,' individuals in the population. The mean IQ of the population is ', round(iqPopAvg(), digits=2))
+      paste0('There are ',input$iqPopSize,' individuals in the population. The mean IQ of the population is ', round(iqPopAvg(), digits=2),'.')
     } else {
-      paste0('The population is infinitely large. The mean IQ of the population is ', iqPopAvg())
+      paste0('The population is infinitely large. The mean IQ of the population is ', iqPopAvg(),'.')
     }
   })
   
@@ -161,6 +218,18 @@ shinyServer(function(input, output) {
         coord_cartesian(ylim=c(iqPopAvg() - input$iqSD*1.5, iqPopAvg() + input$iqSD*1.5))+
         labs(x="\nSample size",y="Mean of the sample\n")+
         theme_minimal(base_size=18)
+    }
+  })
+  
+  #### output election ####
+  
+  output$electionPopulationPlot <- renderPlot({
+    if(!input$electionPopSizeSelect){
+      ggplot(rv$electionCandidates, aes(x=Candidate, y=`Percent Support`))+
+        geom_bar(stat="identity")
+    } else {
+      ggplot(rv$electionPopulation, aes(x=Candidate))+
+        geom_bar()
     }
   })
   
