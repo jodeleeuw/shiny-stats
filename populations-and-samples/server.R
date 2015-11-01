@@ -37,9 +37,15 @@ shinyServer(function(input, output) {
     rv$electionPopulation <- data.frame(Candidate=rep(rv$electionCandidates$Candidate,votes), Sampled=F)
   }
   
+  observe({
+    d <- hot.to.df(input$electionCandidates)
+    d$`Percent Support` <- as.numeric(d$`Percent Support`)
+    rv$electionCandidates <- d
+  })
+  
   #### sampling methods ####
   
-  sample <- function(n){
+  do.sample <- function(n){
     if(input$populationType == 'iq'){
       sampleIQ(n)
     }
@@ -90,32 +96,63 @@ shinyServer(function(input, output) {
     }
   }
   
+  sampleFromFiniteElectionPopulation <- function(n){
+    opts <- which(rv$electionPopulation$Sampled==F)
+    if(length(opts) < n){
+      n <- length(opts)
+      if(n == 0){
+        return()
+      }
+    }
+    s <- sample(opts, n)
+    rv$electionPopulation$Sampled[s] <- T
+    if(is.null(rv$electionSample)){
+      rv$electionSample <- as.character(rv$electionPopulation$Candidate)[s]
+    } else {
+      rv$electionSample <- c(rv$electionSample, as.character(rv$electionPopulation$Candidate)[s])
+    }
+  }
+  
+  sampleFromInfiniteElectionPopulation <- function(n){
+    s <- sample(as.character(rv$electionCandidates$Candidate), n, replace=T, prob=rv$electionCandidates$`Percent Support`)
+    if(is.null(rv$electionSample)){
+      rv$electionSample <- s
+    } else {
+      rv$electionSample <- c(rv$electionSample, s)
+    }
+  }
+  
   #### reset simulation ####
   
   reset <- function(){
     rv$iqPopulation = NULL
     rv$iqSample = NULL
+    rv$electionSample = NULL
+    rv$electionPopulation = NULL
     if(input$iqPopSizeSelect){
       createFiniteIQPopulation()
+    }
+    if(input$electionPopSizeSelect){
+      createFiniteElectionPopulation()
     }
   }
   
   #### button handlers ####
   
   observeEvent(input$add1, {
-    sampleIQ(1)
+    do.sample(1)
   })
   
   observeEvent(input$add10, {
-    sampleIQ(10)
+    do.sample(10)
   })
   
   observeEvent(input$add100, {
-    sampleIQ(100)
+    do.sample(100)
   })
   
   observeEvent(input$add1000, {
-    sampleIQ(1000)
+    do.sample(1000)
   })
   
   observeEvent(input$reset, {
@@ -226,11 +263,45 @@ shinyServer(function(input, output) {
   output$electionPopulationPlot <- renderPlot({
     if(!input$electionPopSizeSelect){
       ggplot(rv$electionCandidates, aes(x=Candidate, y=`Percent Support`))+
-        geom_bar(stat="identity")
+        labs(y="Percent Support\n")+
+        geom_bar(stat="identity")+
+        theme_minimal(base_size = 18)
     } else {
       ggplot(rv$electionPopulation, aes(x=Candidate))+
-        geom_bar()
+        labs(y="Number of Supporters\n")+
+        geom_bar()+
+        theme_minimal(base_size = 18)
     }
   })
   
+  
+  output$electionSamplePlot <- renderPlot({
+    if(is.null(rv$electionSample)){
+      return(NULL)
+    } else {
+      ggplot(data.frame(Candidate=rv$electionSample), aes(x=Candidate))+
+        geom_bar(binwidth=1)+
+        labs(y="Number of Supporters\n")+
+        theme_minimal(base_size = 18)
+    }
+  })
+  
+  output$electionSamplingErrorPlot <- renderPlot({
+    if(!is.null(rv$electionSample)){
+      allcandidates <- as.character(rv$electionCandidates$Candidate)
+      actualsupport <- rv$electionCandidates$`Percent Support`
+      size <- 1:length(rv$electionSample)
+      df <- expand.grid(candidate=allcandidates,size=size)
+      df$support <- mapply(function(c,s){
+        return(100*sum(rv$electionSample[1:s]==c)/s)
+      },df$candidate,df$size)
+      
+      ggplot(df, aes(x=size, y=support, colour=candidate, group=candidate))+
+        geom_line()+
+        geom_hline(data=data.frame(asup=actualsupport,candidate=allcandidates), aes(yintercept=asup, colour=candidate))+
+        coord_cartesian(ylim=c(0,100))+
+        labs(x="\nSample size",y="Mean of the sample\n")+
+        theme_minimal(base_size=18)
+    }
+  })
 })
