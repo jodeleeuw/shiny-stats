@@ -32,6 +32,7 @@ shinyServer(function(input, output) {
   
   createFiniteElectionPopulation <- function(){
     n <- input$electionPopSize
+    if(n < 10){ return(NULL) }
     support <- rv$electionCandidates$`Percent Support`
     votes <- n*support/100
     rv$electionPopulation <- data.frame(Candidate=rep(rv$electionCandidates$Candidate,votes), Sampled=F)
@@ -302,6 +303,21 @@ shinyServer(function(input, output) {
         coord_cartesian(ylim=c(0,100))+
         labs(x="\nSample size",y="Mean of the sample\n")+
         theme_minimal(base_size=18)
+    }
+  })
+  
+  output$electionSampleSummary <- renderText({
+    if(!is.null(rv$electionSample)){
+      candidates <- unique(rv$electionSample)
+      df <- data.frame(candidates=candidates)
+      df$support <- sapply(df$candidates, function(c){
+        return(100*sum(rv$electionSample==c)/length(rv$electionSample))
+      })
+      s <- paste0('There are ', length(rv$electionSample), ' individuals in the sample. ')
+      for(i in 1:nrow(df)){
+        s <- paste0(s, df[i,]$candidates, ' is receiving ',df[i,]$support,'% of the vote. ')
+      }
+      return(s)
     }
   })
 })

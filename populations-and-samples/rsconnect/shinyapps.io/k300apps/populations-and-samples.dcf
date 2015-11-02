@@ -1,0 +1,8 @@
+name: populations-and-samples
+account: k300apps
+server: shinyapps.io
+bundleId: 302326
+url: https://k300apps.shinyapps.io/populations-and-samples
+when: 1446429499.23723
+asMultiple: FALSE
+asStatic: FALSE
