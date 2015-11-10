@@ -303,13 +303,13 @@ shinyServer(function(input, output) {
     if(nodataflag){
       p <- p + geom_blank()
     } else {
-      p <- p + geom_point()
+      p <- p + geom_point(position="jitter")
     }
     p <- p + 
       labs(x="\nVariable A", y="\nVariable B")+
       theme_bw(base_size=14)+
       stat_smooth(se = FALSE, method = "lm")+
-      geom_jitter(position = position_jitter(width = .25, height = .25))+
+      #geom_jitter(position = position_jitter(width = .25, height = .25))+
     theme(legend.position = "bottom", 
           plot.background = element_rect(fill="transparent", colour=NA), 
           panel.background = element_rect(fill="transparent", colour=NA)

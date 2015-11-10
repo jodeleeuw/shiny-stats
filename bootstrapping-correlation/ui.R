@@ -22,7 +22,7 @@ actionButton <- function(inputId, label, btn.style = "" , css.class = "") {
 }
 
 shinyUI(fluidPage(
-  titlePanel('Bootstrapping'),
+  titlePanel('Bootstrapping - Correlation'),
   
   fluidRow(
     column(4,
