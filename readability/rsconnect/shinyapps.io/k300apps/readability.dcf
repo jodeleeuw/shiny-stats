@@ -1,0 +1,8 @@
+name: readability
+account: k300apps
+server: shinyapps.io
+bundleId: 307926
+url: https://k300apps.shinyapps.io/readability
+when: 1447189039.20627
+asMultiple: FALSE
+asStatic: FALSE
