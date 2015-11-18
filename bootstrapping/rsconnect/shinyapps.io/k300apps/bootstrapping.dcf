@@ -1,0 +1,8 @@
+name: bootstrapping
+account: k300apps
+server: shinyapps.io
+bundleId: 303728
+url: https://k300apps.shinyapps.io/bootstrapping
+when: 1446577410.18888
+asMultiple: FALSE
+asStatic: FALSE
