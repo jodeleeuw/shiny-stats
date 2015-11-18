@@ -27,14 +27,14 @@ shinyServer(function(input, output) {
   
   # store As and Bs in reactive expression, so that they only update once.
   groupArv <- reactive({ 
-    data <- hot.to.df(input$tblA) 
+    data <- hot_to_r(input$tblA) 
     vectorData <- data$A
     if(is.null(vectorData)){return(NULL)}
     vectorData <- vectorData[!is.na(vectorData)]
     return(as.numeric(vectorData))
   })
   groupBrv <- reactive({ 
-    data <- hot.to.df(input$tblB) 
+    data <- hot_to_r(input$tblB) 
     vectorData <- data$B
     if(is.null(vectorData)){return(NULL)}
     vectorData <- vectorData[!is.na(vectorData)]
@@ -50,23 +50,23 @@ shinyServer(function(input, output) {
   })
   
   # hotable for group A
-  output$tblA <- renderHotable({
+  output$tblA <- renderRHandsontable({
     timesA <- as.numeric(input$obsA)
     if(is.na(timesA) | timesA <1){
       timesA <- 1
     }
     datA <- data.frame(Obs = c(1:timesA), A = as.numeric(c(rep(NA, timesA))))
-    return(datA)
-  }, readOnly = c(TRUE, FALSE))
+    rhandsontable(datA,rowHeaders=F, contextMenu=F)
+  })
   # hotable for group B
-  output$tblB <- renderHotable({
+  output$tblB <- renderRHandsontable({
     timesB <- as.numeric(input$obsB)
     if(is.na(timesB) | timesB <1){
       timesB <- 1
     }
     datA <- data.frame(Obs = c(1:timesB), B = as.numeric(c(rep(NA, timesB))))
-    return(datA)
-  }, readOnly = c(TRUE, FALSE))
+    rhandsontable(datA,rowHeaders=F, contextMenu=F)
+  })
   
   # table to show the means and mean difference of the groups
   output$observedSummary <- renderText({
