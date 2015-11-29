@@ -21,14 +21,14 @@ shinyUI(fluidPage(theme=shinytheme("journal"),
                   fluidRow(
                     column(4,
                            wellPanel(
-                             numericInput("numCoins", "How many degrees of freedom?",1,min=1,step=1)
+                             numericInput("numCoins", "How many degrees of freedom?",30,min=1,step=1)
                            ),
                            wellPanel(
                              radioButtons('displayType', "Select based on:",
                                           c("Values" = "number",
                                             "Percentiles" = "percentile")),
                              conditionalPanel('input.displayType == "number"',
-                              selectInput("rangeType", "Select the outcomes that are", c("at least as extreme as", "less extreme than"), selected="inside")),
+                              selectInput("rangeType", "Select the outcomes that are", c("greater than or equal to"="greater", "less than or equal to"="less"), selected="greater")),
                              conditionalPanel('input.displayType == "number"',
                                               uiOutput('evaluationPanel')
                              ),

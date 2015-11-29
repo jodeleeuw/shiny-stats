@@ -71,22 +71,13 @@ shinyServer(function(input, output, session) {
       rng <- 0
     }
 
-    lim <- abs(qt(.005, df))
+    lim <- min(100,abs(qt(.00001, df)))
     x <- seq(-lim, 0, 0.01)
     x <- c(x, -x[length(x):1])
     d <- dt(x, df)
     data <- data.frame(x = x, d = d)
-    # print(length(data$x) - length(data$d)  + 1000)
     data <- rbind(c(-lim, 0), data, c(data[length(data$x), "x"], 0))
-    # print(length(data$x) - length(data$d))
-    
-#     if(rng>lim){
-#       rng <- data[length(data$x), "x"] - 0.01
-#     } else if(rng<(-lim)){
-#       rng <- data[1,"x"] + 0.01
-#     }
-  
-    
+
     p <- ggplot(data, aes(x=x,y=d)) +
       geom_line(stat="identity")+
       labs(y="Frequency\n",x="\nValue")+
@@ -97,12 +88,11 @@ shinyServer(function(input, output, session) {
       rng <- qt(input$percentile/100, df)
       p <- p + geom_vline(x = rng, color = 'red', size = 1.5)
     } else if(input$displayType=='number' & rng<lim & rng>(-lim)) {
-      if(input$rangeType =='at least as extreme as'){
+      if(input$rangeType =='greater'){
         if(rng>=0){
           shade <- rbind(c(rng,0), subset(data, x > rng), c(data[nrow(data), "x"], 0))
 
           p <- p + geom_polygon(data = shade, aes(x=x,y=d),fill = 'red')
-          print("plot")
         } else {
           shade <- rbind(c(data[1, "x"], 0), subset(data, x < rng), c(rng,0))
           
@@ -130,14 +120,14 @@ shinyServer(function(input, output, session) {
     if( input$displayType == 'number' & length(input$range)>0){
       if(!is.null(input$range) & !is.na(input$range)){
         if(input$range<0){
-          if(input$rangeType == 'at least as extreme as'){
+          if(input$rangeType == 'greater'){
             
             v <- pt(input$range, df)# - pt(input$range[2], df)
           } else {
             v <- 1 - (pt(input$range, df)) #- pt(input$range[2], df))
           }
         } else { 
-          if(input$rangeType == 'at least as extreme as'){
+          if(input$rangeType == 'greater'){
             
             v <- pt(-input$range, df)# - pt(input$range[2], df)
           } else {
