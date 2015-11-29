@@ -60,51 +60,66 @@ shinyServer(function(input, output, session) {
   
   output$distPlot <- renderPlot({
     df <- input$numCoins
-    if(is.na(df)){ return(NULL) }
+    if(is.na(df) | is.null(df)){ return(NULL) }
     
-    x <- seq(-40, 40, 0.1)
+    rng <- input$range
+    if(length(rng)>0){
+      if(is.na(rng) | is.null(rng)){
+        rng <- 0
+      }
+    } else {
+      rng <- 0
+    }
+
+    lim <- abs(qt(.005, df))
+    x <- seq(-lim, 0, 0.01)
+    x <- c(x, -x[length(x):1])
     d <- dt(x, df)
     data <- data.frame(x = x, d = d)
-    colnames(data) <- c("val","freq")
-    data$val <- as.numeric(as.character(data$val))
-    data$freq <- as.numeric(as.character(data$freq))
+    # print(length(data$x) - length(data$d)  + 1000)
+    data <- rbind(c(-lim, 0), data, c(data[length(data$x), "x"], 0))
+    # print(length(data$x) - length(data$d))
     
-    if(input$displayType == 'number'){
-      rng <- input$range
-      if(is.null(rng)){return(NULL)}
-      if(is.na(rng)){return(NULL)}
-    } else if(input$displayType == 'percentile'){
-      # rng <- quantile(rv$outcomes, probs = input$percentile/100, type =1)
-      rng <- qt(p = input$percentile/100, df)
-    }
+#     if(rng>lim){
+#       rng <- data[length(data$x), "x"] - 0.01
+#     } else if(rng<(-lim)){
+#       rng <- data[1,"x"] + 0.01
+#     }
+  
     
-    data$inrange <- sapply(data$val, function(b){
-      if(input$rangeType == 'inside'){
-        if(b <= rng ){
-          return("red")
+    p <- ggplot(data, aes(x=x,y=d)) +
+      geom_line(stat="identity")+
+      labs(y="Frequency\n",x="\nValue")+
+      scale_y_continuous(breaks=NULL) + 
+      theme_minimal(base_size=18)+
+      xlim(-lim, lim) + geom_polygon(fill = "black")
+    if(input$displayType == 'percentile'){
+      rng <- qt(input$percentile/100, df)
+      p <- p + geom_vline(x = rng, color = 'red', size = 1.5)
+    } else if(input$displayType=='number' & rng<lim & rng>(-lim)) {
+      if(input$rangeType =='at least as extreme as'){
+        if(rng>=0){
+          shade <- rbind(c(rng,0), subset(data, x > rng), c(data[nrow(data), "x"], 0))
+
+          p <- p + geom_polygon(data = shade, aes(x=x,y=d),fill = 'red')
+          print("plot")
         } else {
-          return("black")
+          shade <- rbind(c(data[1, "x"], 0), subset(data, x < rng), c(rng,0))
+          
+          p <- p + geom_polygon(data = shade, aes(x=x,y=d),fill = 'red')
         }
       } else {
-        if(b <= rng){
-          return("black")
+        if(rng<0){
+          shade <- rbind(c(rng,0), subset(data, x > rng), c(data[nrow(data), "x"], 0))
+          
+          p <- p + geom_polygon(data = shade, aes(x=x,y=d),fill = 'red')
         } else {
-          return("red")
+          shade <- rbind(c(data[1, "x"], 0), subset(data, x < rng), c(rng,0))
+          
+          p <- p + geom_polygon(data = shade, aes(x=x,y=d),fill = 'red')
         }
       }
-    })
-    
-    data$inrange <- as.factor(data$inrange)
-    
-    fillv <- levels(data$inrange)
-    lim <- abs(qt(.01, df))
-    p <- ggplot(data, aes(x=val,y=freq, fill=inrange)) +
-      geom_bar(stat="identity")+
-      labs(y="Value\n",x="\nFrequency")+
-      scale_fill_manual(guide=F, values=fillv)+
-      #scale_x_discrete(breaks=lab_breaks)+
-      theme_minimal(base_size=18)+
-      xlim(-lim, lim)
+    }
     return(p)
     
   })
@@ -112,14 +127,22 @@ shinyServer(function(input, output, session) {
   output$rangeInfo <- renderText({
     df <- input$numCoins
     if(is.na(df)){df <- 1}
-    if( input$displayType == 'number' ){
-      if(!is.null(input$range)){
-        if(input$rangeType == 'inside'){
-          
-  
-          v <- pt(input$range, df)# - pt(input$range[2], df)
-        } else {
-          v <- 1 - (pt(input$range, df)) #- pt(input$range[2], df))
+    if( input$displayType == 'number' & length(input$range)>0){
+      if(!is.null(input$range) & !is.na(input$range)){
+        if(input$range<0){
+          if(input$rangeType == 'at least as extreme as'){
+            
+            v <- pt(input$range, df)# - pt(input$range[2], df)
+          } else {
+            v <- 1 - (pt(input$range, df)) #- pt(input$range[2], df))
+          }
+        } else { 
+          if(input$rangeType == 'at least as extreme as'){
+            
+            v <- pt(-input$range, df)# - pt(input$range[2], df)
+          } else {
+            v <- 1 - (pt(-input$range, df)) #- pt(input$range[2], df))
+          }
         }
       } else {v <- 0 }
       p <- v*100
@@ -136,7 +159,7 @@ shinyServer(function(input, output, session) {
                     "The ",input$percentile[1]," percentile is ",q,"."))
     }
     
-    
+    return(NULL)
     return(paste0("There have been ",length(rv$outcomes)," runs of the simulation. ",round(p,digits=2),"% of the outcomes meet the selection criteria. ",
                   "The ",input$percentile," percentile is ",q,"."))
     
@@ -157,7 +180,7 @@ shinyServer(function(input, output, session) {
 #     maxV <- input$numCoins
 #     qV <- round(maxV / 4)
     # sliderInput("range",label="the range", min=-40,max=40,step=.5,value=c(-5,5))
-    numericInput("range", label = "the range from negative infinity to", value = 0)
+    numericInput("range", label = "the value", value = 0)
   })
   
 })

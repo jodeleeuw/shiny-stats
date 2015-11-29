@@ -24,15 +24,16 @@ shinyUI(fluidPage(theme=shinytheme("journal"),
                              numericInput("numCoins", "How many degrees of freedom?",1,min=1,step=1)
                            ),
                            wellPanel(
-                             radioButtons('displayType', "Select range based on:",
+                             radioButtons('displayType', "Select based on:",
                                           c("Values" = "number",
                                             "Percentiles" = "percentile")),
-                             selectInput("rangeType", "Select the outcomes that are", c("inside", "outside"), selected="inside"),
+                             conditionalPanel('input.displayType == "number"',
+                              selectInput("rangeType", "Select the outcomes that are", c("at least as extreme as", "less extreme than"), selected="inside")),
                              conditionalPanel('input.displayType == "number"',
                                               uiOutput('evaluationPanel')
                              ),
                              conditionalPanel('input.displayType == "percentile"',
-                                              sliderInput("percentile", label="the percentile range", min=0,max=100,step=0.5, val = c(50))
+                                              sliderInput("percentile", label="Show the cutoff for the percentile", min=0,max=100,step=0.5, val = c(50))
                              )
                              
                              
