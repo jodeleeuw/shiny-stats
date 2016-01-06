@@ -67,12 +67,11 @@ shinyUI(fluidPage(
              radioButtons('displayType', "Select range based on:",
                           c("Difference of means" = "number",
                             "Percentiles" = "percentile")),
-             selectInput("rangeType", "Select the outcomes that are", c("inside", "outside"), selected="inside"),
              conditionalPanel('input.displayType == "number"',
                               uiOutput('evaluationPanel')
              ),
              conditionalPanel('input.displayType == "percentile"',
-                              sliderInput("percentile", label="the percentile range", min=0,max=100,step=0.5, val = c(25,75))
+                              sliderInput("percentile", label="Select outcomes inside the percentile range", min=0,max=100,step=0.5, val = c(25,75))
              )
            )
     )

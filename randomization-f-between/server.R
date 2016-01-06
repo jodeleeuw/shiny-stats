@@ -325,18 +325,10 @@ shinyServer(function(input, output) {
           return("deepskyblue2")
         }
       }
-      if(input$rangeType == 'inside'){
-        if(low >= rng[1] & high < rng[2]){
-          return("red")
-        } else {
-          return("black")
-        }
+      if(low >= rng[1] & high <= rng[2]){
+        return("red")
       } else {
-        if(high >= rng[1] & low < rng[2]){
-          return("black")
-        } else {
-          return("red")
-        }
+        return("black")
       }
     }, freqtable$min, freqtable$max)
     
@@ -458,21 +450,16 @@ shinyServer(function(input, output) {
     if(is.nan(qV)){
       qV <- 0
     }
-    sliderInput("range",label="the range", min=minV,max=maxV,step=0.01,value=c(minV,minV+qV))
+    sliderInput("range",label="Select outcomes that are inside the range", min=minV,max=maxV,step=0.01,value=c(minV,minV+qV))
   })
   
   output$rangeInfo <- renderText({
     if( length(rv$outcomes) == 0 ) { return("Run the simulation to see the result!") }
     
     if( input$displayType == 'number' ){
-      if(input$rangeType == 'inside'){
-        v <- sum(rv$outcomes >= input$range[1] & rv$outcomes <= input$range[2])
-      } else {
-        v <- sum(rv$outcomes < input$range[1] | rv$outcomes > input$range[2])
-      }
-      p <- v / length(rv$outcomes)*100
+      v <- sum(rv$outcomes >= input$range[1] & rv$outcomes <= input$range[2])
       
-      return(paste0("There have been ",length(rv$outcomes)," runs of the simulation. ",round(p,digits=2),"% of the outcomes meet the selection criteria."))
+      return(paste0("There have been ",length(rv$outcomes)," runs of the simulation. ",v," of the outcomes are between ", input$range[1], " and ", input$range[2],"."))
       
     } else if( input$displayType == 'percentile'){
       q <- quantile(rv$outcomes, probs = input$percentile/100, type =1)
@@ -482,7 +469,7 @@ shinyServer(function(input, output) {
     }
     
     
-    return(paste0("There have been ",length(rv$outcomes)," runs of the simulation. ",round(p,digits=2),"% of the outcomes meet the selection criteria. ",
+    return(paste0("There have been ",length(rv$outcomes)," runs of the simulation. ",v," of the outcomes are between ", input$range[1], " and ", input$range[2],". ",
                   "The ",input$percentile," percentile is ",q,"."))
     
   })

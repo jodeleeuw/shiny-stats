@@ -66,7 +66,6 @@ shinyUI(fluidPage(
              radioButtons('displayType', "Select range based on:",
                           c("Correlation" = "number",
                             "Percentiles" = "percentile")),
-             selectInput("rangeType", "Select the outcomes that are", c("inside", "outside"), selected="inside"),
              conditionalPanel('input.displayType == "number"',
                               uiOutput('evaluationPanel')
              ),

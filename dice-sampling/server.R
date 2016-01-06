@@ -56,19 +56,11 @@ shinyServer(function(input, output, session) {
     
     b <- 0:(input$numDice*input$numSides)
     v <- sapply(b, function(b){
-      if(input$rangeType == 'inside'){
         if(b >= input$range[1] & b <= input$range[2]){
           return("red")
         } else {
           return("black")
         }
-      } else {
-        if(b >= input$range[1] & b <= input$range[2]){
-          return("black")
-        } else {
-          return("red")
-        }
-      }
     })
     
     if(input$numDice * input$numSides >= 1000){
@@ -97,16 +89,11 @@ shinyServer(function(input, output, session) {
   })
   
   output$rangeInfo <- renderText({
-    if(input$rangeType == 'inside'){
-      v <- sum(rv$outcomes >= input$range[1] & rv$outcomes <= input$range[2])
-    } else {
-      v <- sum(rv$outcomes < input$range[1] | rv$outcomes > input$range[2])
-    }
-    p <- v / length(rv$outcomes)*100
-    if(is.nan(p)){
+    v <- sum(rv$outcomes >= input$range[1] & rv$outcomes <= input$range[2])
+    if(length(rv$outcomes)<1){
       return("Roll some dice to see the result!")
     } else {
-      return(paste0("There have been ",length(rv$outcomes)," runs of the simulation. ",round(p,digits=2),"% of the outcomes meet the selection criteria."))
+      return(paste0("There have been ",length(rv$outcomes)," runs of the simulation. ",v," of the outcomes are between ", input$range[1]," and ", input$range[2],"."))
     }
   })
   
@@ -125,7 +112,7 @@ shinyServer(function(input, output, session) {
     maxV <- input$numDice*input$numSides
     minV <- input$numDice
     qV <- round((maxV-minV) / 4)
-    sliderInput("range",label="of the following range", min=minV,max=maxV,step=1,value=c(minV+qV,maxV-qV))
+    sliderInput("range",label="Select outcomes inside the range", min=minV,max=maxV,step=1,value=c(minV+qV,maxV-qV))
   })
   
 })

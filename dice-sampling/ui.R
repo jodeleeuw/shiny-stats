@@ -34,9 +34,7 @@ shinyUI(fluidPage(theme=shinytheme("journal"),
                              fluidRow(column(12,style="text-align:center",class="form-group", 
                                              actionButton("reset","Reset Simulation", css.class="btn-sm")))
                            ),
-                           wellPanel(
-                             selectInput("rangeType", "Show the % of outcomes that are", c("inside", "outside"), selected="inside"),
-                             uiOutput('evaluationPanel')
+                           wellPanel(uiOutput('evaluationPanel')
                            )
                     ),
                     

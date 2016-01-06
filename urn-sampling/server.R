@@ -190,19 +190,11 @@ shinyServer(function(input, output, session) {
     }
     
     data$inrange <- sapply(data$val, function(b){
-      if(input$rangeType == 'inside'){
         if(b >= input$range[1] & b <= input$range[2]){
           return("red")
         } else {
           return("black")
         }
-      } else {
-        if(b >= input$range[1] & b <= input$range[2]){
-          return("black")
-        } else {
-          return("red")
-        }
-      }
     })
     
     p <- ggplot(data, aes(x=val,y=freq))+ #, fill=val)) +
@@ -247,7 +239,7 @@ shinyServer(function(input, output, session) {
       }
    
     qV <- round(maxV / 4)
-    sliderInput("range",label="of the following range", min=0,max=maxV,step=stepsize,value=c(qV,maxV-qV))
+    sliderInput("range",label="Show outcomes inside the range", min=0,max=maxV,step=stepsize,value=c(qV,maxV-qV))
   })
   
   output$rangeInfo <- renderText({
@@ -255,17 +247,12 @@ shinyServer(function(input, output, session) {
     if(is.null(rv$outcomes)) { return('Run more simulations') }
     
     summaryStats <- sumOutcomes()
-    
-    if(input$rangeType == 'inside'){
-      v <- sum(summaryStats >= input$range[1] & summaryStats <= input$range[2])
-    } else {
-      v <- sum(summaryStats < input$range[1] | summaryStats > input$range[2])
-    }
-    p <- v / length(summaryStats)*100
-    if(is.nan(p)){
+
+    v <- sum(summaryStats >= input$range[1] & summaryStats <= input$range[2])
+    if(length(summaryStats)<1){
       return("Run more simulations.")
     } else {
-      return(paste0(round(p,digits=2),"% of the outcomes meet the selection criteria."))
+      return(paste0(v," outcomes meet the selection criteria."))
     }
   })
   

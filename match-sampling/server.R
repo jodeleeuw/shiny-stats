@@ -57,19 +57,12 @@ shinyServer(function(input, output, session) {
     data$freq <- as.numeric(as.character(data$freq))
     
     data$inrange <- sapply(data$val, function(b){
-      if(input$rangeType == 'inside'){
         if(b >= input$range[1] & b <= input$range[2]){
           return("red")
         } else {
           return("black")
         }
-      } else {
-        if(b >= input$range[1] & b <= input$range[2]){
-          return("black")
-        } else {
-          return("red")
-        }
-      }
+
     })
     
     data$inrange <- as.factor(data$inrange)
@@ -89,14 +82,9 @@ shinyServer(function(input, output, session) {
   output$rangeInfo <- renderText({
     if(length(rv$outcomes)==0){return("Run a simulation to see the result!") }
     
-    if(input$rangeType == 'inside'){
-      v <- sum(rv$outcomes >= input$range[1] & rv$outcomes <= input$range[2])
-    } else {
-      v <- sum(rv$outcomes < input$range[1] | rv$outcomes > input$range[2])
-    }
-    p <- v / length(rv$outcomes)*100
-    
-    return(paste0("There have been ",length(rv$outcomes)," runs of the simulation. ",round(p,digits=2),"% of the outcomes meet the selection criteria."))
+    v <- sum(rv$outcomes >= input$range[1] & rv$outcomes <= input$range[2])
+
+    return(paste0("There have been ",length(rv$outcomes)," runs of the simulation. ",v," of the outcomes are between ",input$range[1], " and ", input$range[2],"."))
     
   })
   
@@ -112,7 +100,7 @@ shinyServer(function(input, output, session) {
   output$evaluationPanel <- renderUI({
     maxV <- input$numPairs
     qV <- round(maxV / 4)
-    sliderInput("range",label="of the following range", min=0,max=maxV,step=1,value=c(qV,maxV-qV))
+    sliderInput("range",label="Show outcomes that are inside the following range", min=0,max=maxV,step=1,value=c(qV,maxV-qV))
   })
   
 })

@@ -225,19 +225,12 @@ shinyServer(function(input, output) {
           return("deepskyblue2")
         }
       }
-      if(input$rangeType == 'inside'){
-        if(low >= rng[1] & high < rng[2]){
-          return("red")
-        } else {
-          return("black")
-        }
+      if(low >= rng[1] & high <= rng[2]){
+        return("red")
       } else {
-        if(high >= rng[1] & low < rng[2]){
-          return("black")
-        } else {
-          return("red")
-        }
+        return("black")
       }
+      
     }, freqtable$min, freqtable$max)
     
     freqtable$inrange <- as.factor(freqtable$inrange)
@@ -250,9 +243,9 @@ shinyServer(function(input, output) {
     if(is.null(values)){
       values <- c(-1, 1)
     }
-    lim <- max(sd(values), max(abs(rv$outcomes)))+1
+    lim <- max(sd(values), max(abs(rv$outcomes)))+.5
     if(length(rv$outcomes)>10){
-      lim <- max(abs(rv$outcomes))+1
+      lim <- max(abs(rv$outcomes))+.5
     }
     
     p <- ggplot(freqtable, aes(x=val,y=freq, fill = inrange)) +
@@ -335,14 +328,9 @@ shinyServer(function(input, output) {
     if( length(rv$outcomes) == 0 ) { return("Run the simulation to see the result!") }
     
     if( input$displayType == 'number' ){
-      if(input$rangeType == 'inside'){
-        v <- sum(rv$outcomes >= input$range[1] & rv$outcomes <= input$range[2])
-      } else {
-        v <- sum(rv$outcomes < input$range[1] | rv$outcomes > input$range[2])
-      }
-      p <- v / length(rv$outcomes)*100
+      v <- sum(rv$outcomes >= input$range[1] & rv$outcomes <= input$range[2])
       
-      return(paste0("There have been ",length(rv$outcomes)," runs of the simulation. ",round(p,digits=2),"% of the outcomes meet the selection criteria."))
+      return(paste0("There have been ",length(rv$outcomes)," runs of the simulation. ",v," of the outcomes are between ", input$range[1], " and ", input$range[2],"."))
       
     } else if( input$displayType == 'percentile'){
       q <- quantile(rv$outcomes, probs = input$percentile/100, type =1)
@@ -352,7 +340,7 @@ shinyServer(function(input, output) {
     }
     
     
-    return(paste0("There have been ",length(rv$outcomes)," runs of the simulation. ",round(p,digits=2),"% of the outcomes meet the selection criteria. ",
+    return(paste0("There have been ",length(rv$outcomes)," runs of the simulation. ",v," of the outcomes are between ", input$range[1], " and ", input$range[2],". ",
                   "The ",input$percentile," percentile is ",q,"."))
     
   })

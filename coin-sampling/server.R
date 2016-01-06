@@ -73,19 +73,19 @@ shinyServer(function(input, output, session) {
     }
     
     data$inrange <- sapply(data$val, function(b){
-      if(input$rangeType == 'inside'){
+      # if(input$rangeType == 'inside'){
         if(b >= rng[1] & b <= rng[2]){
           return("red")
         } else {
           return("black")
         }
-      } else {
-        if(b >= rng[1] & b <= rng[2]){
-          return("black")
-        } else {
-          return("red")
-        }
-      }
+#       } else {
+#         if(b >= rng[1] & b <= rng[2]){
+#           return("black")
+#         } else {
+#           return("red")
+#         }
+#       }
     })
     
     data$inrange <- as.factor(data$inrange)
@@ -106,14 +106,14 @@ shinyServer(function(input, output, session) {
     if( length(rv$outcomes) == 0 ) { return("Flip some coins to see the result!") }
     
     if( input$displayType == 'number' ){
-      if(input$rangeType == 'inside'){
+      # if(input$rangeType == 'inside'){
         v <- sum(rv$outcomes >= input$range[1] & rv$outcomes <= input$range[2])
-      } else {
-        v <- sum(rv$outcomes < input$range[1] | rv$outcomes > input$range[2])
-      }
-      p <- v / length(rv$outcomes)*100
+#       } else {
+#         v <- sum(rv$outcomes < input$range[1] | rv$outcomes > input$range[2])
+#       }
+      # p <- v / length(rv$outcomes)*100
       
-      return(paste0("There have been ",length(rv$outcomes)," runs of the simulation. ",round(p,digits=2),"% of the outcomes meet the selection criteria."))
+      return(paste0("There have been ",length(rv$outcomes)," runs of the simulation. ",v," of the outcomes are between ",input$range[1]," and ",input$range[2], "."))
       
     } else if( input$displayType == 'percentile'){
       q <- quantile(rv$outcomes, probs = input$percentile/100, type =1)
@@ -142,7 +142,7 @@ shinyServer(function(input, output, session) {
   output$evaluationPanel <- renderUI({
     maxV <- input$numCoins
     qV <- round(maxV / 4)
-    sliderInput("range",label="the range", min=0,max=input$numCoins,step=1,value=c(qV,input$numCoins-qV))
+    sliderInput("range",label="Select outcomes inside the range", min=0,max=input$numCoins,step=1,value=c(qV,input$numCoins-qV))
   })
   
 })
