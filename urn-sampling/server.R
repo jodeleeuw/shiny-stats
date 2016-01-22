@@ -22,10 +22,14 @@ shinyServer(function(input, output, session) {
   })
   
   observeEvent(input$addUrn, {
-    if(input$urnName %in% rv$types$Type){
-      rv$types[rv$types$Type == input$urnName,1] <- rv$types[rv$types$Type == input$urnName,1] + input$urnCount
+    if(input$urnCount%%1){
+      shinyjs::info("Please add items to the urn in whole numbers only.")
     } else {
-      rv$types = rbind(rv$types, data.frame(Count=input$urnCount,Type=input$urnName))
+      if(input$urnName %in% rv$types$Type){
+        rv$types[rv$types$Type == input$urnName,1] <- rv$types[rv$types$Type == input$urnName,1] + input$urnCount
+      } else {
+        rv$types = rbind(rv$types, data.frame(Count=input$urnCount,Type=input$urnName))
+      }
     }
     updateNumericInput(session, 'urnCount', value=1)
     updateTextInput(session, 'urnName',value='')
@@ -75,7 +79,7 @@ shinyServer(function(input, output, session) {
   
   createSet <- function(){
     df <- rv$types
-    df$Type <- as.character(df$Type)
+    df$Type <- make.names(as.character(df$Type))
     set <- mapply(function(t,r){
       rep(t,r)
     }, df$Type, df$Count)
