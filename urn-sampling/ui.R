@@ -99,7 +99,7 @@ shinyUI(
                                 checkboxInput('summaryNumItems', 'Number of Items in Sample'),
                                 conditionalPanel('input.summaryNumItems == true',
                                                  textOutput('summaryNumItemsMean')),
-                                checkboxInput('summaryRange', 'Percentage of Items in Specified Range'),
+                                checkboxInput('summaryRange', 'Number of Items in Specified Range'),
                                 conditionalPanel('input.summaryRange == true',
                                                  uiOutput('rangeSlider'),
                                                  textOutput('rangeInfo'))

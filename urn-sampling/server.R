@@ -14,11 +14,13 @@ shinyServer(function(input, output, session) {
   rv <- reactiveValues(
     outcomes = NULL,
     started = F,
-    types = data.frame(Count=numeric(), Type=character())
+    types = data.frame(Count=numeric(), Type=numeric()),
+    names = data.frame(Type = character(), Number = numeric())
   )
   
   observeEvent(input$resetUrn, {
     rv$types = rv$types[NULL,]
+    rv$names = rv$names[NULL,]
   })
   
   observeEvent(input$addUrn, {
@@ -26,9 +28,10 @@ shinyServer(function(input, output, session) {
       shinyjs::info("Please add items to the urn in whole numbers only.")
     } else {
       if(input$urnName %in% rv$types$Type){
-        rv$types[rv$types$Type == input$urnName,1] <- rv$types[rv$types$Type == input$urnName,1] + input$urnCount
+        rv$types[rv$names == input$urnName,1] <- rv$types[rv$names == input$urnName,1] + input$urnCount
       } else {
         rv$types = rbind(rv$types, data.frame(Count=input$urnCount,Type=input$urnName))
+        rv$names = rbind(rv$names, data.frame(Type = input$urnName, Number = length(rv$names$Number)+1))
       }
     }
     updateNumericInput(session, 'urnCount', value=1)
@@ -79,7 +82,7 @@ shinyServer(function(input, output, session) {
   
   createSet <- function(){
     df <- rv$types
-    df$Type <- make.names(as.character(df$Type))
+    df$Type <- rv$names[as.character(rv$names$Type)==as.character(df$Type),"Number"]
     set <- mapply(function(t,r){
       rep(t,r)
     }, df$Type, df$Count)
@@ -103,29 +106,39 @@ shinyServer(function(input, output, session) {
       s <- replicate(times, sample(set, input$sampleSize, replace=replacement))
     }
     if(input$samplingType == 'conditional'){
+      stopper <- input$stoppingType
+      stopper <- rv$names[make.names(rv$names$Type)==make.names(stopper),"Number"]
       if(input$replacementConditional == 'with'){
         s <- replicate(times, {
-          targetCount <- 0
-          samp <- character()
-          while(targetCount < input$stoppingAmount){
-            this_samp <- sample(set, 1)
-            if(this_samp == input$stoppingType){
-              targetCount <- targetCount + 1
+          this_set = sample(set,10*length(set), replace=TRUE) #draws a big sample
+          samp <- cumsum(1*(this_set==stopper)) #adds up the number of targets at each point
+          targ <- match(input$stoppingAmount, samp) #finds the first index where we have enough targets
+          if(!is.na(targ)){
+            result <- this_set[1:targ] 
+            return(result)
+          } else { #if not enough targets, draws a bigger sample
+            this_set = sample(set,100*length(set), replace=TRUE)
+            samp <- cumsum(1*(this_set==stopper))
+            targ <- match(input$stoppingAmount, samp)
+            if(!is.na(targ)){
+              result <- this_set[1:targ]
+              return(result)
+            } else { #should never get this far
+              this_set = sample(set,1000*length(set), replace=TRUE)
+              samp <- cumsum(1*(this_set==stopper))
+              targ <- match(input$stoppingAmount, samp)
+              result <- this_set[1:targ]
+              return(result)
             }
-            samp <- c(samp, this_samp)
           }
-          return(samp)
         }, simplify=FALSE)
       } else if(input$replacementConditional == 'without'){
         s <- replicate(times, {
-          items <- sample(set) # shuffle the vector
-          samp <- items[1]
-          end <- 1
-          while(sum(samp==input$stoppingType) < input$stoppingAmount && end < length(set)){
-            end <- end+1
-            samp <- items[1:end]
-          }
-          return(samp)
+          this_set = sample(set) #shuffles the set
+          samp <- cumsum(1*(this_set==stopper)) #adds up the number of targets at each point
+          targ <- match(input$stoppingAmount, samp) #finds the first index where we have enough targets
+          result <- this_set[1:targ]
+          return(result)
         }, simplify=FALSE)
       }
       maxl <- max(sapply(s,length))
@@ -134,6 +147,15 @@ shinyServer(function(input, output, session) {
       })
       #s <- do.call(cbind, s)
     }
+    numvals <- length(unique(set))
+    s <- apply(s, 2, function(v){
+      b <- c()
+      for(i in 1:numvals){
+        count <- sum(1*(v==i), na.rm = TRUE)
+        b <- c(b, count)
+      }
+      return(b)
+    })
     if(is.null(rv$outcomes)){
       if(is.matrix(s)){
         rv$outcomes <- s
@@ -194,11 +216,11 @@ shinyServer(function(input, output, session) {
     }
     
     data$inrange <- sapply(data$val, function(b){
-        if(b >= input$range[1] & b <= input$range[2]){
-          return("red")
-        } else {
-          return("black")
-        }
+      if(b >= input$range[1] & b <= input$range[2]){
+        return("red")
+      } else {
+        return("black")
+      }
     })
     
     p <- ggplot(data, aes(x=val,y=freq))+ #, fill=val)) +
@@ -235,13 +257,13 @@ shinyServer(function(input, output, session) {
   output$rangeSlider <- renderUI({
     stepsize <- 1
     
-      if(input$samplingType == 'fixed'){
-        maxV <- input$sampleSize
-      }
-      if(input$samplingType == 'conditional'){
-        maxV <- max(sumOutcomes())
-      }
-   
+    if(input$samplingType == 'fixed'){
+      maxV <- input$sampleSize
+    }
+    if(input$samplingType == 'conditional'){
+      maxV <- max(sumOutcomes())
+    }
+    
     qV <- round(maxV / 4)
     sliderInput("range",label="Show outcomes inside the range", min=0,max=maxV,step=stepsize,value=c(qV,maxV-qV))
   })
@@ -251,7 +273,7 @@ shinyServer(function(input, output, session) {
     if(is.null(rv$outcomes)) { return('Run more simulations') }
     
     summaryStats <- sumOutcomes()
-
+    
     v <- sum(summaryStats >= input$range[1] & summaryStats <= input$range[2])
     if(length(summaryStats)<1){
       return("Run more simulations.")
@@ -305,10 +327,13 @@ shinyServer(function(input, output, session) {
   
   sumOutcomes <- reactive({
     if(is.null(rv$outcomes)){return(NA)}
-    apply(rv$outcomes, 2, function(v){
-      v <- make.names(v[!is.na(v)])
-      return(sum(v %in% input$displayTypes))
-    })
+    types <- input$displayTypes
+    types <- rv$names[make.names(rv$names$Type) %in% make.names(types), "Number"]
+    outcomes <- rv$outcomes
+    typeTrue <- matrix(0, nrow = 1, ncol = nrow(outcomes) )
+    typeTrue[1,types] <- 1
+    sums <- typeTrue%*%outcomes
+    return(sums)
   })
   
 })
