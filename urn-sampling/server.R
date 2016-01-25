@@ -86,6 +86,7 @@ shinyServer(function(input, output, session) {
     set <- mapply(function(t,r){
       rep(t,r)
     }, df$Type, df$Count)
+    
     set <- unlist(set)
     names(set) <- NULL
     return(set)
@@ -148,6 +149,9 @@ shinyServer(function(input, output, session) {
       #s <- do.call(cbind, s)
     }
     numvals <- length(unique(set))
+    if(!is.matrix(s)){
+      s <- matrix(s, nrow = 1, ncol = length(s))
+    }
     s <- apply(s, 2, function(v){
       b <- c()
       for(i in 1:numvals){
