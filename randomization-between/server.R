@@ -66,7 +66,8 @@ shinyServer(function(input, output) {
       timesA <- 1
     }
     datA <- data.frame(Obs = c(1:timesA), A = as.numeric(c(rep(NA, timesA))))
-    rhandsontable(datA,rowHeaders=F, contextMenu=F)
+    rhandsontable(datA,rowHeaders=F, contextMenu=F) %>%
+      hot_col(col = "A", copyable = TRUE)
   })
   # hotable for group B
   output$tblB <- renderRHandsontable({
@@ -75,7 +76,8 @@ shinyServer(function(input, output) {
       timesB <- 1
     }
     datA <- data.frame(Obs = c(1:timesB), B = as.numeric(c(rep(NA, timesB))))
-    rhandsontable(datA,rowHeaders=F, contextMenu=F)
+    rhandsontable(datA,rowHeaders=F, contextMenu=F) %>%
+      hot_col(col = "B", copyable = TRUE)
   })
   
   # table to show the means and mean difference of the groups
