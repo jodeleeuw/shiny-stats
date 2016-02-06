@@ -25,6 +25,7 @@ shinyServer(function(input, output) {
     # swapH = numeric() 
   )
   
+  
   # store As and Bs in reactive expression, so that they only update once.
   groupArv <- reactive({
     tbl <- input$tblA
@@ -66,8 +67,11 @@ shinyServer(function(input, output) {
       timesA <- 1
     }
     datA <- data.frame(Obs = c(1:timesA), A = as.numeric(c(rep(NA, timesA))))
-    rhandsontable(datA,rowHeaders=F, contextMenu=F) %>%
-      hot_col(col = "A", copyable = TRUE)
+    #height argument makes the column height proportional to number of obs + header
+    #maxRows makes sure they can't paste in data longer than the number of obs
+    rhandsontable(datA,rowHeaders=F, contextMenu=F, height = timesA*23 + 27, maxRows = timesA) %>%
+      hot_col(col = "A", copyable = TRUE) %>% #make sure command+v works
+      hot_col(col = "Obs", readOnly = TRUE)   #make sure they can't edit observation numbers
   })
   # hotable for group B
   output$tblB <- renderRHandsontable({
@@ -76,8 +80,9 @@ shinyServer(function(input, output) {
       timesB <- 1
     }
     datA <- data.frame(Obs = c(1:timesB), B = as.numeric(c(rep(NA, timesB))))
-    rhandsontable(datA,rowHeaders=F, contextMenu=F) %>%
-      hot_col(col = "B", copyable = TRUE)
+    rhandsontable(datA,rowHeaders=F, contextMenu=F, height = timesB*23+27, maxRows = timesB) %>%
+      hot_col(col = "B", copyable = TRUE) %>%
+      hot_col(col = "Obs", readOnly = TRUE)
   })
   
   # table to show the means and mean difference of the groups
@@ -404,7 +409,18 @@ shinyServer(function(input, output) {
     if(is.nan(qV)){
       qV <- 0
     }
-    sliderInput("range",label="Select outcomes that are inside the range", min=minV,max=maxV,step=0.01,value=c(minV+qV,maxV-qV))
+    
+    # Get observed difference to make sure sliders include it
+    dataA <- groupArv()
+    dataB <- groupBrv()
+    if(is.null(dataA)|is.null(dataB)){
+      observedDiff <- 0
+    } else { 
+      GroupA_mean <- mean(dataA)
+      GroupB_mean <- mean(dataB)
+      observedDiff <- GroupA_mean - GroupB_mean
+    }
+    sliderInput("range",label="Select outcomes that are inside the range", min=min(minV, observedDiff),max=max(maxV, observedDiff),step=0.01,value=c(minV+qV,maxV-qV))
   })
   
   output$rangeInfo <- renderText({
