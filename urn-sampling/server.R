@@ -219,11 +219,21 @@ shinyServer(function(input, output, session) {
       
     }
     
+    qv <-  quantile(sumOutcomes(), probs = input$percentile/100, type=1)
+    
     data$inrange <- sapply(data$val, function(b){
-      if(b >= input$range[1] & b <= input$range[2]){
-        return("red")
-      } else {
-        return("black")
+      if(input$displayType == 'number'){
+        if(b >= input$range[1] & b <= input$range[2]){
+          return("red")
+        } else {
+          return("black")
+        }
+      } else if(input$displayType == 'percentile') {
+        if(b >= qv[1] & b <= qv[2]){
+          return("red")
+        } else {
+          return("black")
+        }
       }
     })
     
@@ -232,7 +242,7 @@ shinyServer(function(input, output, session) {
       labs(y="# of trials\n",x="\nOutcome")+
       theme_minimal(base_size=18)
     
-    if(input$summaryRange == TRUE){
+    if(input$displayType == 'number' || input$displayType == 'percentile'){
       p <- p + aes(fill=inrange) + scale_fill_manual(values=c('black','red'),guide=F)
     }
     
@@ -274,16 +284,32 @@ shinyServer(function(input, output, session) {
   
   output$rangeInfo <- renderText({
     
-    if(is.null(rv$outcomes)) { return('Run more simulations') }
+    if(is.null(rv$outcomes)) { return(NULL) }
     
     summaryStats <- sumOutcomes()
     
     v <- sum(summaryStats >= input$range[1] & summaryStats <= input$range[2])
     if(length(summaryStats)<1){
-      return("Run more simulations.")
+      return(NULL)
     } else {
       return(paste0(v," outcomes meet the selection criteria."))
     }
+  })
+  
+  output$percentileInfo <- renderText({
+    
+    if(is.null(rv$outcomes)) { return(NULL) }
+    
+    summaryStats <- sumOutcomes()
+    
+    rng <- quantile(summaryStats, probs = input$percentile/100, type=1)
+    
+    if(length(summaryStats)<1){
+      return(NULL)
+    } else {
+      return(paste0("The ",input$percentile[1]," percentile is ",rng[1], " and the ",input$percentile[2]," percentile is ",rng[2]))
+    }
+    
   })
   
   output$urnItemsText <- renderUI({

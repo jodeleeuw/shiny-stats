@@ -99,10 +99,17 @@ shinyUI(
                                 checkboxInput('summaryNumItems', 'Number of Items in Sample'),
                                 conditionalPanel('input.summaryNumItems == true',
                                                  textOutput('summaryNumItemsMean')),
-                                checkboxInput('summaryRange', 'Number of Items in Specified Range'),
-                                conditionalPanel('input.summaryRange == true',
+                                radioButtons('displayType', "Select range based on:",
+                                             c("Number of items in specified range" = "number",
+                                               "Percentiles" = "percentile")),
+                                #checkboxInput('summaryRange', 'Number of Items in Specified Range'),
+                                conditionalPanel('input.displayType == "number"',
                                                  uiOutput('rangeSlider'),
-                                                 textOutput('rangeInfo'))
+                                                 textOutput('rangeInfo')),
+                                #checkboxInput('summaryPercentile', 'Percentiles'),
+                                conditionalPanel('input.displayType == "percentile"',
+                                  sliderInput("percentile", label="Select outcomes inside the percentile range", min=0,max=100,step=0.5, val = c(25,75)),
+                                  textOutput('percentileInfo'))
                               )
                        )),
                      wellPanel(
