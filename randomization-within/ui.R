@@ -10,7 +10,8 @@ library(ggplot2)
 library(shinyjs)
 library(shinythemes)
 require(shinysky)
-#library(shinyTable)
+# library(shinyTable)
+library(rhandsontable)
 
 ## helper function for styled buttons
 actionButton <- function(inputId, label, btn.style = "" , css.class = "") {
@@ -29,7 +30,7 @@ shinyUI(fluidPage(
            wellPanel(
              HTML('<legend>Input observed data</legend>'),
              numericInput("obsA", "# of observations", 1, min = 1),
-             hotable("tblA")
+             rHandsontableOutput("tblA")
            ),
            
            wellPanel(

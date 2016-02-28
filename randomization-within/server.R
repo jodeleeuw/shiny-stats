@@ -32,7 +32,13 @@ shinyServer(function(input, output) {
   # store As and Bs in reactive expression, so that they only update once.
   
   getDataTable <- reactive({
-    data <- hot.to.df(input$tblA)
+    data <- input$tblA
+    if(!is.null(data)){
+      data <- hot_to_r(input$tblA)
+    } else {
+      data <- NULL
+    }
+    if(is.null(data)){return(NULL)}
     return(data)
   })
   
@@ -46,6 +52,7 @@ shinyServer(function(input, output) {
   })
   dataAmeanRV <- reactive({
     data <- getDataTable()
+    # print(data)
     if(is.null(data)){ return(NULL) }
     return(mean(data$A))
   })
@@ -59,15 +66,20 @@ shinyServer(function(input, output) {
     return(v)
   })
   
-  # hotable for group A
-  output$tblA <- renderHotable({
+  # hotable for data
+  output$tblA <- renderRHandsontable({
     timesA <- as.numeric(input$obsA)
     if(is.na(timesA) | timesA <1){
       timesA <- 1
     }
-    datA <- data.frame(Subject = c(1:timesA), A = as.numeric(c(rep(NA, timesA))), B = as.numeric(c(rep(NA, timesA))))
-    return(datA)
-  }, readOnly = c(TRUE, FALSE, FALSE))
+    datA <- data.frame(Obs = c(1:timesA), A = as.numeric(c(rep(NA, timesA))),  B = as.numeric(c(rep(NA, timesA))))
+    #height argument makes the column height proportional to number of obs + header
+    #maxRows makes sure they can't paste in data longer than the number of obs
+    rhandsontable(datA,rowHeaders=F, contextMenu=F, height = timesA*23 + 27, maxRows = timesA) %>%
+      hot_col(col = "A", copyable = TRUE) %>% #make sure command+v works
+      hot_col(col = "B", copyable = TRUE) %>%
+      hot_col(col = "Obs", readOnly = TRUE)   #make sure they can't edit observation numbers
+  })
   
   # table to show the means and mean difference of the groups
   output$observedSummary <- renderText({
@@ -184,7 +196,7 @@ shinyServer(function(input, output) {
       
       # find the size of the biggest bin (when binsize  = wid)
       yVal <- limtab[limtab[,"Freq"]==yMax,"data"]
-      yMax2 <- sum(limtab[abs(limtab[,"data"]-yVal<=wid), "Freq"])
+      yMax2 <- sum(limtab[abs(limtab[,"data"]-yVal)<=wid, "Freq"])
       
       # scale the (relative) size of the dots
       maxRat <- .4/log(yMax2^.05+1)+.6*(1-(1000/((max(data, 1))+1000)))
@@ -291,7 +303,7 @@ shinyServer(function(input, output) {
       return(NULL)
     }
     diff <- lastResampleDiff()
-    return(paste0("The resampled difference in means is ", diff))
+    return(paste0("The resampled difference in means is ", round(diff, 2)))
   })
   
   output$resampledData <- renderPlot({
@@ -332,7 +344,7 @@ shinyServer(function(input, output) {
     
     p <- p +
       scale_y_continuous(name = "", breaks = NULL) +
-      labs(x="\nObserved difference (condition A - condition B)")+
+      labs(x="\nObserved difference (A -  B)")+
       xlim(limMin, limMax) + 
       theme_bw(base_size=14)+
       scale_fill_discrete(guide=F)+
@@ -353,6 +365,17 @@ shinyServer(function(input, output) {
       minV <-floor(min(rv$outcomes))
     }
     
+    Difference <- dataDiffRV()
+    Difference <- mean(Difference)
+    if(!is.null(rv$outcomes)){
+      if(Difference>=(maxV+1)){
+        maxV <- Difference + 1
+      }
+      if(Difference<=(minV-1)){
+        minV <- Difference - 1
+      }
+    }
+    
     if(length(rv$outcomes)<10){
       if(abs(minV)>=abs(maxV)){
         maxV <- -minV
@@ -364,6 +387,7 @@ shinyServer(function(input, output) {
     if(is.nan(qV)){
       qV <- 0
     }
+
     sliderInput("range",label="Select outcomes inside the range", min=minV,max=maxV,step=0.01,value=c(minV+qV,maxV-qV))
   })
   
