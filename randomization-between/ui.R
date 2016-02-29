@@ -10,7 +10,7 @@ library(ggplot2)
 library(shinyjs)
 library(shinythemes)
 library(rhandsontable)
-library(shinyTable)
+#library(shinyTable)
 # library(shinysky)
 
 ## helper function for styled buttons
@@ -23,7 +23,7 @@ actionButton <- function(inputId, label, btn.style = "" , css.class = "") {
 }
 
 shinyUI(fluidPage(
-  titlePanel('Resampling'),
+  titlePanel('Randomization Test - Between Subjects'),
   
   fluidRow(
     column(4,
