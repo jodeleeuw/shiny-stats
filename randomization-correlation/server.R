@@ -26,14 +26,26 @@ shinyServer(function(input, output) {
   
   # store As and Bs in reactive expression, so that they only update once.
   groupArv <- reactive({ 
-    data <- hot.to.df(input$tblA) 
+    data <- input$tblA
+    if(!is.null(data)){
+      data <- hot_to_r(input$tblA)
+    } else {
+      data <- NULL
+    }
+    if(is.null(data)){return(NULL)} 
     vectorData <- data$A
     if(is.null(vectorData)){return(NULL)}
     vectorData <- vectorData[!is.na(vectorData)]
     return(as.numeric(vectorData))
   })
   groupBrv <- reactive({ 
-    data <- hot.to.df(input$tblB) 
+    data <- input$tblB
+    if(!is.null(data)){
+      data <- hot_to_r(input$tblB)
+    } else {
+      data <- NULL
+    }
+    if(is.null(data)){return(NULL)}
     vectorData <- data$B
     if(is.null(vectorData)){return(NULL)}
     vectorData <- vectorData[!is.na(vectorData)]
@@ -48,23 +60,31 @@ shinyServer(function(input, output) {
   })
   
   # hotable for group A
-  output$tblA <- renderHotable({
+  output$tblA <- renderRHandsontable({
     timesA <- as.numeric(input$obsA)
     if(is.na(timesA) | timesA <1){
       timesA <- 1
     }
     datA <- data.frame(Obs = c(1:timesA), A = as.numeric(c(rep(NA, timesA))))
-    return(datA)
-  }, readOnly = c(TRUE, FALSE))
+    #height argument makes the column height proportional to number of obs + header
+    #maxRows makes sure they can't paste in data longer than the number of obs
+    rhandsontable(datA,rowHeaders=F, contextMenu=F, height = timesA*23 + 27, maxRows = timesA) %>%
+      hot_col(col = "A", copyable = TRUE) %>% #make sure command+v works
+      hot_col(col = "Obs", readOnly = TRUE)   #make sure they can't edit observation numbers
+  })
   # hotable for group B
-  output$tblB <- renderHotable({
+  output$tblB <- renderRHandsontable({
     timesB <- as.numeric(input$obsA)
     if(is.na(timesB) | timesB <1){
       timesB <- 1
     }
     datA <- data.frame(Obs = c(1:timesB), B = as.numeric(c(rep(NA, timesB))))
-    return(datA)
-  }, readOnly = c(TRUE, FALSE))
+    #height argument makes the column height proportional to number of obs + header
+    #maxRows makes sure they can't paste in data longer than the number of obs
+    rhandsontable(datA,rowHeaders=F, contextMenu=F, height = timesB*23 + 27, maxRows = timesB) %>%
+      hot_col(col = "B", copyable = TRUE) %>% #make sure command+v works
+      hot_col(col = "Obs", readOnly = TRUE)   #make sure they can't edit observation numbers
+  })
   
   # table to show the means and mean difference of the groups
   output$observedSummary <- renderText({

@@ -10,6 +10,7 @@ library(ggplot2)
 library(shinyjs)
 library(shinythemes)
 require(shinysky)
+library(rhandsontable)
 #library(shinyTable)
 
 ## helper function for styled buttons
@@ -31,8 +32,8 @@ shinyUI(fluidPage(
              fluidRow(
                column(6, numericInput("obsA", "# of observations for each variable", 1, min = 1)
                )),
-             fluidRow(column(5, hotable("tblA")),
-                      column(5, hotable("tblB")))
+             fluidRow(column(5, rHandsontableOutput("tblA")),
+                      column(5, rHandsontableOutput("tblB")))
            ),
            wellPanel(
              HTML('<legend>Run simulations</legend>'),
