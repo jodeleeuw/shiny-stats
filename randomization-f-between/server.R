@@ -7,6 +7,7 @@
 
 library(shiny)
 library(ggplot2)
+library(assertthat)
 
 # Function for getting the means when resampling
 getMean <- function(val, order){
@@ -26,11 +27,13 @@ calculate.f <- function(lst){
   msb <- (length(lst$a1)*(mean(lst$a1-mean(unlist(lst))))^2 + length(lst$a2)*(mean(lst$a2-mean(unlist(lst))))^2 +
             length(lst$a3)*(mean(lst$a3-mean(unlist(lst))))^2)/2
   f <- msb/msw
+  
   return(f)
 }
 
 calculate.f.fromVec <- function(vec, numA, numB, numC){
   lst <- makeList(vec, numA, numB, numC)
+  
   msw <- (var(lst$a1) * (length(lst$a1) - 1) + var(lst$a2) * (length(lst$a2) - 1) + 
             var(lst$a3) * (length(lst$a3) - 1))/((length(lst$a1) + length(lst$a2) + length(lst$a3)-3))
   msb <- (length(lst$a1)*(mean(lst$a1-mean(unlist(lst))))^2 + length(lst$a2)*(mean(lst$a2-mean(unlist(lst))))^2 +
@@ -52,21 +55,39 @@ shinyServer(function(input, output) {
   
   # store As and Bs in reactive expression, so that they only update once.
   groupArv <- reactive({ 
-    data <- hot.to.df(input$tblA) 
+    data <- input$tblA
+    if(!is.null(data)){
+      data <- hot_to_r(input$tblA)
+    } else {
+      data <- NULL
+    }
+    if(is.null(data)){return(NULL)} 
     vectorData <- data$A
     if(is.null(vectorData)){return(NULL)}
     vectorData <- vectorData[!is.na(vectorData)]
     return(as.numeric(vectorData))
   })
   groupBrv <- reactive({ 
-    data <- hot.to.df(input$tblB) 
+    data <- input$tblB
+    if(!is.null(data)){
+      data <- hot_to_r(input$tblB)
+    } else {
+      data <- NULL
+    }
+    if(is.null(data)){return(NULL)} 
     vectorData <- data$B
     if(is.null(vectorData)){return(NULL)}
     vectorData <- vectorData[!is.na(vectorData)]
     return(as.numeric(vectorData))
   })
   groupCrv <- reactive({ 
-    data <- hot.to.df(input$tblC) 
+    data <- input$tblC
+    if(!is.null(data)){
+      data <- hot_to_r(input$tblC)
+    } else {
+      data <- NULL
+    }
+    if(is.null(data)){return(NULL)} 
     vectorData <- data$C
     if(is.null(vectorData)){return(NULL)}
     vectorData <- vectorData[!is.na(vectorData)]
@@ -88,31 +109,43 @@ shinyServer(function(input, output) {
   })
   
   # hotable for group A
-  output$tblA <- renderHotable({
+  output$tblA <- renderRHandsontable({
     timesA <- as.numeric(input$obsA)
     if(is.na(timesA) | timesA <1){
       timesA <- 1
     }
     datA <- data.frame(Obs = c(1:timesA), A = as.numeric(c(rep(NA, timesA))))
-    return(datA)
-  }, readOnly = c(TRUE, FALSE))
+    #height argument makes the column height proportional to number of obs + header
+    #maxRows makes sure they can't paste in data longer than the number of obs
+    rhandsontable(datA,rowHeaders=F, contextMenu=F, height = timesA*23 + 27, maxRows = timesA) %>%
+      hot_col(col = "A", copyable = TRUE) %>% #make sure command+v works
+      hot_col(col = "Obs", readOnly = TRUE)   #make sure they can't edit observation numbers
+  })
   # hotable for group B
-  output$tblB <- renderHotable({
+  output$tblB <- renderRHandsontable({
     timesB <- as.numeric(input$obsB)
     if(is.na(timesB) | timesB <1){
       timesB <- 1
     }
-    datA <- data.frame(Obs = c(1:timesB), B = as.numeric(c(rep(NA, timesB))))
-    return(datA)
-  }, readOnly = c(TRUE, FALSE))
-  output$tblC <- renderHotable({
+    datB <- data.frame(Obs = c(1:timesB), B = as.numeric(c(rep(NA, timesB))))
+    #height argument makes the column height proportional to number of obs + header
+    #maxRows makes sure they can't paste in data longer than the number of obs
+    rhandsontable(datB,rowHeaders=F, contextMenu=F, height = timesB*23 + 27, maxRows = timesB) %>%
+      hot_col(col = "B", copyable = TRUE) %>% #make sure command+v works
+      hot_col(col = "Obs", readOnly = TRUE)   #make sure they can't edit observation numbers
+  })
+  output$tblC <- renderRHandsontable({
     timesC <- as.numeric(input$obsC)
     if(is.na(timesC) | timesC <1){
       timesC <- 1
     }
-    datA <- data.frame(Obs = c(1:timesC), C = as.numeric(c(rep(NA, timesC))))
-    return(datA)
-  }, readOnly = c(TRUE, FALSE))
+    datC <- data.frame(Obs = c(1:timesC), C = as.numeric(c(rep(NA, timesC))))
+    #height argument makes the column height proportional to number of obs + header
+    #maxRows makes sure they can't paste in data longer than the number of obs
+    rhandsontable(datC,rowHeaders=F, contextMenu=F, height = timesC*23 + 27, maxRows = timesC) %>%
+      hot_col(col = "C", copyable = TRUE) %>% #make sure command+v works
+      hot_col(col = "Obs", readOnly = TRUE)   #make sure they can't edit observation numbers
+  })
   
   # table to show the means and mean difference of the groups
   output$observedSummary <- renderText({
@@ -122,8 +155,10 @@ shinyServer(function(input, output) {
     GroupA_mean <- mean(dataA)
     GroupB_mean <- mean(dataB)
     GroupC_mean <- mean(dataC)
+    if(anyNA(GroupA_mean) || anyNA(GroupB_mean) || anyNA(GroupB_mean)){return(NULL)}
+    if(length(dataA)<2 || length(dataB)<2 || length(dataC)<2){return(NULL)}
     f <- observed.f()
-    if(!is.nan(GroupA_mean) && !is.nan(GroupB_mean)){
+    if(!is.nan(GroupA_mean) && !is.nan(GroupB_mean) && !is.nan(GroupB_mean)){
       return(paste0(
         '<p>The observed mean for Group A is ',round(GroupA_mean,digits=2),'.<br>',
         'The observed mean for Group B is ',round(GroupB_mean,digits=2),'.<br>',
@@ -228,12 +263,17 @@ shinyServer(function(input, output) {
     nodataflag <- F
     
     # if there's no data, the plot tells them something's funny
-    if(length(Values)<3){
+    if(length(As)<1 | length(Bs)<1 |length(Bs)<1 ){
       Values <- c(0,0,0)
       nodataflag <- T
     }
     OriginalGroup <- c(rep("A", length(As)), rep("B", length(Bs)), rep("C", length(Cs)))
     if(length(OriginalGroup)<2){
+      OriginalGroup <- c("A", "B", "C")
+    }
+    
+    if(length(OriginalGroup)!=length(Values)){
+      Values <- c(0, 0, 0)
       OriginalGroup <- c("A", "B", "C")
     }
     

@@ -10,6 +10,7 @@ library(ggplot2)
 library(shinyjs)
 library(shinythemes)
 require(shinysky)
+library(rhandsontable)
 #library(shinyTable)
 
 ## helper function for styled buttons
@@ -30,11 +31,11 @@ shinyUI(fluidPage(
              HTML('<legend>Input observed data</legend>'),
              fluidRow(
                column(4, numericInput("obsA", "# of observations in Group A", 1, min = 1),
-                      hotable("tblA")),
+                      rHandsontableOutput("tblA")),
                column(4, numericInput("obsB", "# of observations in Group B", 1, min = 1), 
-                      hotable("tblB")),
+                      rHandsontableOutput("tblB")),
                column(4, numericInput("obsC", "# of observations in Group C", 1, min = 1), 
-                      hotable("tblC"))
+                      rHandsontableOutput("tblC"))
              )
            ),
            wellPanel(
