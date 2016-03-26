@@ -28,11 +28,14 @@ shinyServer(function(input, output) {
   
   # store As and Bs in reactive expression, so that they only update once.
   groupArv <- reactive({ 
-    data <- hot.to.df(input$tblA) 
-    vectorData <- data$A
-    if(is.null(vectorData)){return(NULL)}
-    vectorData <- vectorData[!is.na(vectorData)]
-    return(as.numeric(vectorData))
+    data <- input$tblA
+    if(!is.null(data)){
+      data <- hot_to_r(input$tblA)
+    } else {
+      data <- NULL
+    }
+    if(is.null(data)){return(NULL)}
+    return(data$A[!is.na(data$A)])
   })
   lastResampleMean <- reactive({
     NewGroup <- rv$newOrder
@@ -47,14 +50,18 @@ shinyServer(function(input, output) {
   
   
   # hotable for group A
-  output$tblA <- renderHotable({
+  output$tblA <- renderRHandsontable({
     timesA <- as.numeric(input$obsA)
     if(is.na(timesA) | timesA <1){
       timesA <- 1
     }
     datA <- data.frame(Obs = c(1:timesA), A = as.numeric(c(rep(NA, timesA))))
-    return(datA)
-  }, readOnly = c(TRUE, FALSE))
+    #height argument makes the column height proportional to number of obs + header
+    #maxRows makes sure they can't paste in data longer than the number of obs
+    rhandsontable(datA,rowHeaders=F, contextMenu=F, height = timesA*23 + 27, maxRows = timesA) %>%
+      hot_col(col = "A", copyable = TRUE) %>% #make sure command+v works
+      hot_col(col = "Obs", readOnly = TRUE)   #make sure they can't edit observation numbers
+  })
   
   # table to show the means and mean difference of the groups
   output$observedSummary <- renderText({
@@ -122,10 +129,19 @@ shinyServer(function(input, output) {
     if(length(a)>0){
       rv$started <- T
       dataA <- groupArv()
-      orders <- replicate(n, sample(dataA, replace = TRUE))
-      rv$newOrder <- orders[,n]
-      means <- apply(orders, MARGIN = 2, FUN = mean )
-      medians <- apply(orders, MARGIN = 2, FUN = median )
+      if(length((dataA))==1){
+        orders <- rep(dataA, n)
+        rv$newOrder <- orders
+        means <- orders
+        medians <- orders
+      } else {
+        orders <- replicate(n, sample(dataA, replace = TRUE))
+        rv$newOrder <- orders[,n]
+        means <- apply(orders, MARGIN = 2, FUN = mean )
+        medians <- apply(orders, MARGIN = 2, FUN = median )
+      }
+      # print(orders)
+
       rv$outcomesMeans <- c(rv$outcomesMeans, means)
       rv$outcomesMedians <- c(rv$outcomesMedians, medians)
     }
@@ -264,19 +280,12 @@ shinyServer(function(input, output) {
           return("deepskyblue2")
         }
       }
-      if(input$rangeType == 'inside'){
-        if(low >= rng[1] & high < rng[2]){
-          return("red")
-        } else {
-          return("black")
-        }
+      if(low >= rng[1] & high < rng[2]){
+        return("red")
       } else {
-        if(high >= rng[1] & low < rng[2]){
-          return("black")
-        } else {
-          return("red")
-        }
+        return("black")
       }
+   
     }, freqtable$min, freqtable$max)
     
     freqtable$inrange <- as.factor(freqtable$inrange)
@@ -336,19 +345,12 @@ shinyServer(function(input, output) {
           return("deepskyblue2")
         }
       }
-      if(input$rangeType == 'inside'){
-        if(low >= rng[1] & high < rng[2]){
-          return("red")
-        } else {
-          return("black")
-        }
+      if(low >= rng[1] & high < rng[2]){
+        return("red")
       } else {
-        if(high >= rng[1] & low < rng[2]){
-          return("black")
-        } else {
-          return("red")
-        }
+        return("black")
       }
+  
     }, freqtable$min, freqtable$max)
     
     freqtable$inrange <- as.factor(freqtable$inrange)
@@ -365,7 +367,7 @@ shinyServer(function(input, output) {
       limMax <- max((rv$outcomesMedians))+1
       limMin <- min((rv$outcomesMedians))-1
     }
-    print(freqtable)
+    
     p <- ggplot(freqtable, aes(x=val,y=freq, fill = inrange)) +
       geom_bar(stat="identity")+
       labs(y="Frequency\n",x="\nBootstrapped Median")+
@@ -465,25 +467,24 @@ shinyServer(function(input, output) {
     }
     
     
-    qV <- round(maxV / 2)
+    qV <- round((maxV - minV) / 4)
     if(is.nan(qV)){
       qV <- 0
     }
-    sliderInput("range",label="the range", min=minV,max=maxV,step=0.01,value=c(minV+qV,maxV-qV))
+ 
+    sliderInput("range",label="Select outcomes that are inside the range", min=minV,max=maxV,step=0.01,value=c(minV+qV,maxV-qV))
   })
   
   output$rangeInfo <- renderText({
     if( length(rv$outcomesMeans) == 0 ) { return("Run the simulation to see the result!") }
     if(input$statistic=="meanStat"){
       if( input$displayType == 'number' ){
-        if(input$rangeType == 'inside'){
-          v <- sum(rv$outcomesMeans >= input$range[1] & rv$outcomesMeans <= input$range[2])
-        } else {
-          v <- sum(rv$outcomesMeans < input$range[1] | rv$outcomesMeans > input$range[2])
-        }
-        p <- v / length(rv$outcomesMeans)*100
+       
+        v <- sum(rv$outcomesMeans >= input$range[1] & rv$outcomesMeans <= input$range[2])
         
-        return(paste0("There have been ",length(rv$outcomesMeans)," runs of the simulation. ",round(p,digits=2),"% of the outcomes meet the selection criteria."))
+        # return(paste0("There have been ",length(rv$outcomesMeans)," runs of the simulation. ",round(p,digits=2),"% of the outcomes meet the selection criteria."))
+        
+        return(paste0("There have been ",length(rv$outcomesMeans)," runs of the simulation. ",v," of the outcomes are between ", input$range[1]," and ", input$range[2],"."))
         
       } else if( input$displayType == 'percentile'){
         q <- quantile(rv$outcomesMeans, probs = input$percentile/100, type =1)
@@ -493,14 +494,10 @@ shinyServer(function(input, output) {
       }
     } else if (input$statistic=="medianStat"){
       if( input$displayType == 'number' ){
-        if(input$rangeType == 'inside'){
-          v <- sum(rv$outcomesMedians >= input$range[1] & rv$outcomesMedians <= input$range[2])
-        } else {
-          v <- sum(rv$outcomesMedians < input$range[1] | rv$outcomesMedians > input$range[2])
-        }
-        p <- v / length(rv$outcomesMedians)*100
+        v <- sum(rv$outcomesMedians >= input$range[1] & rv$outcomesMedians <= input$range[2])
+
         
-        return(paste0("There have been ",length(rv$outcomesMedians)," runs of the simulation. ",round(p,digits=2),"% of the outcomes meet the selection criteria."))
+        return(paste0("There have been ",length(rv$outcomesMedians)," runs of the simulation. ",v," of the outcomes are between ", input$range[1]," and ", input$range[2],"."))
         
       } else if( input$displayType == 'percentile'){
         q <- quantile(rv$outcomesMedians, probs = input$percentile/100, type =1)
@@ -511,7 +508,8 @@ shinyServer(function(input, output) {
     }
     
     
-    return(paste0("There have been ",length(rv$outcomesMeans)," runs of the simulation. ",round(p,digits=2),"% of the outcomes meet the selection criteria. ",
+    # return(paste0("There have been ",length(rv$outcomesMeans)," runs of the simulation. ",round(p,digits=2),"% of the outcomes meet the selection criteria. ",
+    return(paste0("There have been ",length(rv$outcomes)," runs of the simulation. ",v," of the outcomes are between ", input$range[1]," and ", input$range[2],".",
                   "The ",input$percentile," percentile is ",q,"."))
     
   })
