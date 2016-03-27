@@ -8,11 +8,6 @@
 library(shiny)
 library(ggplot2)
 
-# Function for getting the means when resampling
-getMean <- function(val, order){
-  m <- mean(val[order=="A"]) - mean(val[order=="B"])
-  return(m)
-}
 
 shinyServer(function(input, output) {
   
