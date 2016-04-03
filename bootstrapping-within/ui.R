@@ -4,6 +4,7 @@ library(shinyjs)
 library(shinythemes)
 require(shinysky)
 #library(shinyTable)
+library(rhandsontable)
 
 ## helper function for styled buttons
 actionButton <- function(inputId, label, btn.style = "" , css.class = "") {
@@ -22,7 +23,7 @@ shinyUI(fluidPage(
            wellPanel(
              HTML('<legend>Input observed data</legend>'),
              numericInput("obsA", "# of observations", 1, min = 1),
-             hotable("tblA")
+             rHandsontableOutput("tblA")
            ),
            
            wellPanel(
@@ -61,7 +62,7 @@ shinyUI(fluidPage(
              radioButtons('displayType', "Select range based on:",
                           c("Bootstrapped value" = "number",
                             "Percentiles" = "percentile")),
-             selectInput("rangeType", "Select the outcomes that are", c("inside", "outside"), selected="inside"),
+             # selectInput("rangeType", "Select the outcomes that are", c("inside", "outside"), selected="inside"),
              conditionalPanel('input.displayType == "number"',
                               uiOutput('evaluationPanel')
              ),
