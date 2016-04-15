@@ -71,7 +71,7 @@ shinyServer(function(input, output, session) {
       rng <- 0
     }
 
-    lim <- min(100,abs(qt(.00001, df)))
+    lim <- 13
     x <- seq(-lim, 0, 0.01)
     x <- c(x, -x[length(x):1])
     d <- dt(x, df)
