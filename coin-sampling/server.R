@@ -37,6 +37,10 @@ shinyServer(function(input, output, session) {
     runFlips(1000)
   })
   
+  observeEvent(input$flip10000, {
+    runFlips(10000)
+  })
+  
   observe({
     x <- input$probHeads
     if(is.na(x)){ return() }
@@ -96,8 +100,21 @@ shinyServer(function(input, output, session) {
       geom_bar(stat="identity")+
       labs(y="# of trials\n",x="\n# of heads in trial")+
       scale_fill_manual(guide=F, values=fillv)+
-      #scale_x_discrete(breaks=lab_breaks)+
-      theme_minimal(base_size=18)
+      scale_x_continuous(expand = c(0, 0), breaks = scales::pretty_breaks()) +  
+      theme_minimal(base_size=18) + 
+      scale_y_continuous(expand = c(0, 0)) +
+      theme(panel.grid.major.x = element_blank(),
+            panel.grid.minor.x = element_blank(),
+            panel.grid.minor.y = element_blank(),
+            # panel.grid.major.y = element_line(color = "white"),
+            plot.background = element_blank(),
+            panel.ontop = FALSE)
+    
+    if(input$numCoins==1){
+      p = p + scale_x_continuous(breaks = c(0, 1), labels = c("Tails", "Heads")) + 
+        labs(y="# of trials\n",x="\nOutcome")
+    }
+    
     return(p)
     
   })
