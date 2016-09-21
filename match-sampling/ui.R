@@ -28,6 +28,7 @@ shinyUI(fluidPage(theme=shinytheme("journal"),
                                       actionButton("run10", "Run 10", css.class="btn-sm"),
                                       actionButton("run100", "Run 100", css.class="btn-sm"),
                                       actionButton("run1000", "Run 1000", css.class="btn-sm"),
+                                      actionButton("run10000", "Run 10000", css.class="btn-sm"),
                                       class="form-group")
                              ),
                              fluidRow(column(12,style="text-align:center",class="form-group", 

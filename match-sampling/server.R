@@ -43,6 +43,10 @@ shinyServer(function(input, output, session) {
     doSimulation(1000)
   })
   
+  observeEvent(input$run10000, {
+    doSimulation(10000)
+  })
+  
   observeEvent(input$reset, {
     rv$started <- F
     rv$outcomes <- numeric()
@@ -73,8 +77,15 @@ shinyServer(function(input, output, session) {
       geom_bar(stat="identity")+
       labs(y="# of trials\n",x="\n# of matches in trial")+
       scale_fill_manual(guide=F, values=fillv)+
-      #scale_x_discrete(breaks=lab_breaks)+
-      theme_minimal(base_size=18)
+      scale_x_continuous(expand = c(0, 0), breaks = scales::pretty_breaks())+
+      scale_y_continuous(expand = c(0, 0)) + 
+      theme_minimal(base_size=18) +
+      theme(panel.grid.major.x = element_blank(),
+            panel.grid.minor.x = element_blank(),
+            panel.grid.minor.y = element_blank(),
+            # panel.grid.major.y = element_line(color = "white"),
+            plot.background = element_blank(),
+            panel.ontop = FALSE)
     return(p)
     
   })
