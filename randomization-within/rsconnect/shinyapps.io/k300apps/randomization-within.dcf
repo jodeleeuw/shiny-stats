@@ -1,8 +1,9 @@
 name: randomization-within
 account: k300apps
 server: shinyapps.io
-bundleId: 381340
+appId: 64373
+bundleId: 583569
 url: https://k300apps.shinyapps.io/randomization-within/
-when: 1456498510.68535
+when: 1476206396.9551
 asMultiple: FALSE
 asStatic: FALSE

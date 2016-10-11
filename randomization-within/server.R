@@ -193,6 +193,10 @@ shinyServer(function(input, output) {
       
       # scale the binsize
       wid <- (yRange)/(1.5*log(yRange^1.5+1)+(yLength^.5))
+      if(yRange<=20){
+        wid <- 1
+      }
+
       
       # find the size of the biggest bin (when binsize  = wid)
       yVal <- limtab[limtab[,"Freq"]==yMax,"data"]
@@ -200,6 +204,9 @@ shinyServer(function(input, output) {
       
       # scale the (relative) size of the dots
       maxRat <- .4/log(yMax2^.05+1)+.6*(1-(1000/((max(data, 1))+1000)))
+      if(wid==1){
+        maxRat <- 1
+      }
       
       # scale the x axis (otherwise it gets too small when range = 1)
       limMin <- min(df$Values)-wid*(yLength)*.4/(log(yRange^.8+1))
@@ -210,7 +217,8 @@ shinyServer(function(input, output) {
     if(nodataflag){
       p <- p + geom_blank()
     } else {
-      p <- p + geom_dotplot(binwidth=wid, stackgroups = TRUE, dotsize = maxRat, binpositions = "all")
+      p <- p + geom_dotplot(binwidth=wid, stackgroups = TRUE, method = "histodot",
+                            dotsize = maxRat, binpositions = "all")
     }
     p <- p +
       scale_y_continuous(name = "", breaks = NULL) +
@@ -291,8 +299,15 @@ shinyServer(function(input, output) {
       geom_bar(stat="identity")+
       labs(y="Frequency\n",x="\nMean difference of resampled data")+
       scale_fill_manual(guide=F, values=fillv)+
-      #scale_x_discrete(breaks=lab_breaks)+
-      theme_minimal(base_size=18) + 
+      scale_x_continuous(expand = c(0, 0), breaks = scales::pretty_breaks()) +
+      theme_minimal(base_size=18) +
+      scale_y_continuous(expand = c(0, 0)) +
+      theme(panel.grid.major.x = element_blank(),
+            panel.grid.minor.x = element_blank(),
+            panel.grid.minor.y = element_blank(),
+            # panel.grid.major.y = element_line(color = "white"),
+            plot.background = element_blank(),
+            panel.ontop = FALSE) + 
       coord_cartesian(xlim=c(-lim, lim))
     return(p)
     
