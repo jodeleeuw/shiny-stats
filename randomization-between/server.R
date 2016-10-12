@@ -434,7 +434,9 @@ shinyServer(function(input, output) {
       GroupB_mean <- mean(dataB)
       observedDiff <- GroupA_mean - GroupB_mean
     }
-    sliderInput("range",label="Select outcomes that are inside the range", min=min(minV, observedDiff),max=max(maxV, observedDiff),step=0.01,value=c(minV+qV,maxV-qV))
+    sliderInput("range",label="Select outcomes that are inside the range", 
+                min=round(min(minV, observedDiff), 2),max=round(max(maxV, observedDiff), 2),
+                step=0.01,value=c(minV+qV,maxV-qV))
   })
   
   output$rangeInfo <- renderText({

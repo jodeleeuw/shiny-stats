@@ -1,8 +1,9 @@
 name: randomization-between
 account: k300apps
 server: shinyapps.io
-bundleId: 377625
+appId: 64029
+bundleId: 584552
 url: https://k300apps.shinyapps.io/randomization-between/
-when: 1456153497.54654
+when: 1476283830.43892
 asMultiple: FALSE
 asStatic: FALSE

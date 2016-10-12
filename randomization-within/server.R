@@ -403,7 +403,8 @@ shinyServer(function(input, output) {
       qV <- 0
     }
 
-    sliderInput("range",label="Select outcomes inside the range", min=minV,max=maxV,step=0.01,value=c(minV+qV,maxV-qV))
+    sliderInput("range",label="Select outcomes inside the range", 
+                min=round(minV, 2), max=round(maxV, 2),step=0.01,value=c(minV+qV,maxV-qV))
   })
   
   output$rangeInfo <- renderText({
