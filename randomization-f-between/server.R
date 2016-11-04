@@ -7,7 +7,6 @@
 
 library(shiny)
 library(ggplot2)
-library(assertthat)
 
 # Function for getting the means when resampling
 getMean <- function(val, order){
@@ -117,7 +116,8 @@ shinyServer(function(input, output) {
     datA <- data.frame(Obs = c(1:timesA), A = as.numeric(c(rep(NA, timesA))))
     #height argument makes the column height proportional to number of obs + header
     #maxRows makes sure they can't paste in data longer than the number of obs
-    rhandsontable(datA,rowHeaders=F, contextMenu=F, height = timesA*23 + 27, maxRows = timesA) %>%
+    rhandsontable(datA,rowHeaders=F, contextMenu=F, height = timesA*23 + 27, 
+                  maxRows = timesA, width = 300) %>%
       hot_col(col = "A", copyable = TRUE) %>% #make sure command+v works
       hot_col(col = "Obs", readOnly = TRUE)   #make sure they can't edit observation numbers
   })
@@ -130,7 +130,8 @@ shinyServer(function(input, output) {
     datB <- data.frame(Obs = c(1:timesB), B = as.numeric(c(rep(NA, timesB))))
     #height argument makes the column height proportional to number of obs + header
     #maxRows makes sure they can't paste in data longer than the number of obs
-    rhandsontable(datB,rowHeaders=F, contextMenu=F, height = timesB*23 + 27, maxRows = timesB) %>%
+    rhandsontable(datB,rowHeaders=F, contextMenu=F, height = timesB*23 + 27, 
+                  maxRows = timesB, width = 300) %>%
       hot_col(col = "B", copyable = TRUE) %>% #make sure command+v works
       hot_col(col = "Obs", readOnly = TRUE)   #make sure they can't edit observation numbers
   })
@@ -142,7 +143,8 @@ shinyServer(function(input, output) {
     datC <- data.frame(Obs = c(1:timesC), C = as.numeric(c(rep(NA, timesC))))
     #height argument makes the column height proportional to number of obs + header
     #maxRows makes sure they can't paste in data longer than the number of obs
-    rhandsontable(datC,rowHeaders=F, contextMenu=F, height = timesC*23 + 27, maxRows = timesC) %>%
+    rhandsontable(datC,rowHeaders=F, contextMenu=F, height = timesC*23 + 27, 
+                  maxRows = timesC, width = 300) %>%
       hot_col(col = "C", copyable = TRUE) %>% #make sure command+v works
       hot_col(col = "Obs", readOnly = TRUE)   #make sure they can't edit observation numbers
   })

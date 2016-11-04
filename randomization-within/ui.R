@@ -48,7 +48,7 @@ shinyUI(fluidPage(
              
            ),
            wellPanel(
-             HTML('<legend>Observed data summary</legend>'),
+             HTML('<legend>Observed difference summary</legend>'),
              htmlOutput('observedSummary'),
              plotOutput("groupsPlot")
            )
