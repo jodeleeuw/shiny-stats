@@ -68,7 +68,8 @@ shinyServer(function(input, output) {
     datA <- data.frame(Obs = c(1:timesA), A = as.numeric(c(rep(NA, timesA))))
     #height argument makes the column height proportional to number of obs + header
     #maxRows makes sure they can't paste in data longer than the number of obs
-    rhandsontable(datA,rowHeaders=F, contextMenu=F, height = timesA*23 + 27, maxRows = timesA) %>%
+    rhandsontable(datA,rowHeaders=F, contextMenu=F, height = timesA*23 + 27, maxRows = timesA, 
+                  width = 300) %>%
       hot_col(col = "A", copyable = TRUE) %>% #make sure command+v works
       hot_col(col = "Obs", readOnly = TRUE)   #make sure they can't edit observation numbers
   })
@@ -81,7 +82,8 @@ shinyServer(function(input, output) {
     datA <- data.frame(Obs = c(1:timesB), B = as.numeric(c(rep(NA, timesB))))
     #height argument makes the column height proportional to number of obs + header
     #maxRows makes sure they can't paste in data longer than the number of obs
-    rhandsontable(datA,rowHeaders=F, contextMenu=F, height = timesB*23 + 27, maxRows = timesB) %>%
+    rhandsontable(datA,rowHeaders=F, contextMenu=F, height = timesB*23 + 27, maxRows = timesB, 
+                  width = 300) %>%
       hot_col(col = "B", copyable = TRUE) %>% #make sure command+v works
       hot_col(col = "Obs", readOnly = TRUE)   #make sure they can't edit observation numbers
   })
@@ -263,7 +265,7 @@ shinyServer(function(input, output) {
     if(is.null(values)){
       values <- c(-1, 1)
     }
-    lim <- max(sd(values), max(abs(rv$outcomes)))+.5
+    lim <- 1# max(sd(values), max(abs(rv$outcomes)))+.5
     if(length(rv$outcomes)>10){
       lim <- max(abs(rv$outcomes))+.5
     }

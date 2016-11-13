@@ -23,7 +23,7 @@ actionButton <- function(inputId, label, btn.style = "" , css.class = "") {
 }
 
 shinyUI(fluidPage(
-  titlePanel('Resampling'),
+  titlePanel('Randomization Test – Correlation'),
   
   fluidRow(
     column(4,
