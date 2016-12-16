@@ -5,10 +5,10 @@ Shiny apps for teaching introductory statistics through simulation, developed by
 * https://k300apps.shinyapps.io/coin-sampling
 * https://k300apps.shinyapps.io/match-sampling
 * https://k300apps.shinyapps.io/urn-sampling
-* https://k300apps.shinyapps.io/ranomization-between
-* https://k300apps.shinyapps.io/ranomization-within
-* https://k300apps.shinyapps.io/ranomization-correlation
-* https://k300apps.shinyapps.io/ranomization-f-between
+* https://k300apps.shinyapps.io/randomization-between
+* https://k300apps.shinyapps.io/randomization-within
+* https://k300apps.shinyapps.io/randomization-correlation
+* https://k300apps.shinyapps.io/randomization-f-between
 * https://k300apps.shinyapps.io/bootstrapping
 * https://k300apps.shinyapps.io/bootstrapping-between
 * https://k300apps.shinyapps.io/bootstrapping-within
